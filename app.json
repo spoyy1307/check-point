@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Guard Safety",
+    "slug": "guard-safety",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "guardsafety",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://example.com"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "แอปต้องใช้ตำแหน่ง GPS เพื่อยืนยันจุดตรวจและบันทึกการปฏิบัติงาน"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "แอปต้องใช้กล้องเพื่อถ่ายรูปเป็นหลักฐานการตรวจจุดและแจ้งเหตุ"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "แอปต้องใช้กล้องเพื่อถ่ายรูปเป็นหลักฐานการแจ้งเหตุ",
+          "microphonePermission": false,
+          "photosPermission": "แอปต้องใช้รูปภาพเพื่อแนบเป็นหลักฐาน"
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.example.guardsafety",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B4A97"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.example.guardsafety"
+    }
+  }
+}
