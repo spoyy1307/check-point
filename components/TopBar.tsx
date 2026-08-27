@@ -5,11 +5,21 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../constants/colors";
 
-type Props = { title: string; back?: boolean };
+type Props = { title: string; back?: boolean; onBack?: () => void };
 
-export default function TopBar({ title, back = false }: Props) {
+export default function TopBar({ title, back = false, onBack }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(tabs)");
+    }
+  };
 
   return (
     <View
@@ -25,7 +35,7 @@ export default function TopBar({ title, back = false }: Props) {
     >
       <View style={styles.side}>
         {back && (
-          <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
+          <Pressable onPress={handleBack} hitSlop={8} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={28} color={COLORS.white} />
           </Pressable>
         )}

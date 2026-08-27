@@ -57,8 +57,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="menu"
         options={{
-          title: "เมนู",
-          tabBarIcon: ({ color, size }) => <Ionicons name="menu-outline" color={color} size={size} />
+          title: "ตั้งค่า",
+          tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />
         }}
       />
     </Tabs>

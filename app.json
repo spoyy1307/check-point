@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Guard Safety",
-    "slug": "guard-safety",
+    "name": "Check Point",
+    "slug": "check-point",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "guardsafety",
+    "scheme": "checkpoint",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "plugins": [

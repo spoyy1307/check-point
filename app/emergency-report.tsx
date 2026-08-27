@@ -1,12 +1,12 @@
 import React from "react";
-import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import TopBar from "../../components/TopBar";
-import EmergencyOption from "../../components/EmergencyOption";
-import EmergencyCallButton from "../../components/EmergencyCallButton";
-import { COLORS } from "../../constants/colors";
+import TopBar from "../components/TopBar";
+import EmergencyOption from "../components/EmergencyOption";
+import EmergencyCallButton from "../components/EmergencyCallButton";
+import { COLORS } from "../constants/colors";
 
 const options = [
   { type: "fire", icon: "flame-outline" as const, tone: "red" as const, title: "ไฟไหม้", subtitle: "เหตุเพลิงไหม้ / ควัน / กลิ่นไหม้" },
@@ -17,7 +17,7 @@ const options = [
   { type: "other", icon: "ellipsis-horizontal-circle-outline" as const, tone: "gray" as const, title: "เหตุอื่นๆ", subtitle: "เหตุการณ์อื่นๆ ที่ไม่ได้ระบุข้างต้น" }
 ];
 
-export default function EmergencyTabScreen() {
+export default function EmergencyReportStackScreen() {
   const insets = useSafeAreaInsets();
 
   return (
@@ -26,9 +26,10 @@ export default function EmergencyTabScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + 28 }}
       showsVerticalScrollIndicator={false}
     >
-      <TopBar title="แจ้งเหตุฉุกเฉิน" />
+      <TopBar title="แจ้งเหตุฉุกเฉิน" back />
       <View style={styles.intro}>
         <Text style={styles.introTitle}>เลือกประเภทเหตุการณ์ที่ต้องการแจ้ง</Text>
+        <Text style={styles.introSub}>ระบบจะบันทึกตำแหน่ง GPS และเวลาให้อัตโนมัติ</Text>
       </View>
 
       <View style={styles.list}>
@@ -45,13 +46,21 @@ export default function EmergencyTabScreen() {
       </View>
 
       <EmergencyCallButton />
+
+      <View style={styles.footnote}>
+        <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.muted} />
+        <Text style={styles.footText}>ระบบจะบันทึกตำแหน่ง GPS และเวลาให้อัตโนมัติ</Text>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
-  intro: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  intro: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8 },
   introTitle: { textAlign: "center", fontSize: 16, fontWeight: "900", color: COLORS.text },
-  list: { paddingHorizontal: 14, gap: 8 }
+  introSub: { textAlign: "center", color: COLORS.muted, marginTop: 4, fontSize: 12 },
+  list: { paddingHorizontal: 14, gap: 8 },
+  footnote: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, paddingTop: 6 },
+  footText: { color: COLORS.muted, fontSize: 11 }
 });

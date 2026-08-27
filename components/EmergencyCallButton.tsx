@@ -1,22 +1,34 @@
-import React from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../constants/colors";
+import EmergencyControlCenterModal from "./EmergencyControlCenterModal";
 
 export default function EmergencyCallButton() {
-  const call = () => Linking.openURL("tel:000");
+  const [showModal, setShowModal] = useState(false);
 
   return (
-    <Pressable onPress={call} style={styles.button} accessibilityRole="button">
-      <View style={styles.iconCircle}>
-        <Ionicons name="call" size={30} color="white" />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.title}>ติดต่อศูนย์ควบคุมทันที</Text>
-        <Text style={styles.sub}>ขอความช่วยเหลือกรณีเร่งด่วน</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={28} color="white" />
-    </Pressable>
+    <>
+      <Pressable
+        onPress={() => setShowModal(true)}
+        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+        accessibilityRole="button"
+      >
+        <View style={styles.iconCircle}>
+          <Ionicons name="call" size={30} color="white" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>ติดต่อศูนย์ควบคุมทันที</Text>
+          <Text style={styles.sub}>ขอความช่วยเหลือกรณีเร่งด่วน</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={28} color="white" />
+      </Pressable>
+
+      <EmergencyControlCenterModal
+        visible={showModal}
+        onClose={() => setShowModal(false)}
+      />
+    </>
   );
 }
 
@@ -41,5 +53,6 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   title: { color: "white", fontSize: 16, fontWeight: "900" },
-  sub: { color: "white", opacity: 0.9, marginTop: 2, fontSize: 12 }
+  sub: { color: "white", opacity: 0.9, marginTop: 2, fontSize: 12 },
+  buttonPressed: { opacity: 0.88, transform: [{ scale: 0.98 }] }
 });

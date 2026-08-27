@@ -1,12 +1,78 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../constants/colors";
+import { useUserStore } from "../../lib/userStore";
+import { useCheckpointMobileStore } from "../../lib/checkpointMobileStore";
+import { useNotificationStore } from "../../lib/notificationStore";
+import { usePatrolStore } from "../../lib/patrolStore";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const userStore = useUserStore();
+  const profile = userStore.getProfile();
+  const cpStore = useCheckpointMobileStore();
+  const factory = cpStore.getFactory();
+  const notifStore = useNotificationStore();
+  const unreadCount = notifStore.getUnreadCount();
+  const patrolStore = usePatrolStore();
+  const stats = patrolStore.getOverallStats();
+
+  const payload = cpStore.getFullPayload();
+  const shift = payload["check-point-mobile"].shift;
+
+  // Dynamic Thai Date (Real-time Today Date)
+  const getTodayThaiDate = () => {
+    const now = new Date();
+    const dayNames = [
+      "วันอาทิตย์ที่",
+      "วันจันทร์ที่",
+      "วันอังคารที่",
+      "วันพุธที่",
+      "วันพฤหัสบดีที่",
+      "วันศุกร์ที่",
+      "วันเสาร์ที่"
+    ];
+    const monthNames = [
+      "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+      "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
+    ];
+    const dayName = dayNames[now.getDay()];
+    const date = now.getDate();
+    const month = monthNames[now.getMonth()];
+    const year = now.getFullYear() + 543;
+    return `${dayName} ${date} ${month} ${year}`;
+  };
+
+  // Dynamic Shift Status Calculation
+  const isCheckedOut = shift.isCheckedOut;
+  const isCheckedIn = shift.isCheckedIn && !shift.isCheckedOut;
+
+  const shiftStatusConfig = isCheckedOut
+    ? {
+        label: "ออกกะแล้ว",
+        timeText: `ออกกะเวลา ${shift.checkOutTime || "08:00"} น.`,
+        badgeBg: "#FEE2E2",
+        dotColor: "#DC2626",
+        textColor: "#DC2626"
+      }
+    : isCheckedIn
+    ? {
+        label: "กำลังปฏิบัติงาน",
+        timeText: `เข้ากะเวลา ${shift.checkInTime || "20:00"} น.`,
+        badgeBg: COLORS.greenSoft,
+        dotColor: COLORS.green,
+        textColor: COLORS.green
+      }
+    : {
+        label: "รอเข้ากะ",
+        timeText: "ยังไม่ได้ลงเวลาเข้ากะ",
+        badgeBg: "#FEF3C7",
+        dotColor: "#D97706",
+        textColor: "#B45309"
+      };
 
   return (
     <ScrollView
@@ -15,7 +81,7 @@ export default function HomeScreen() {
       showsVerticalScrollIndicator={false}
       bounces={false}
     >
-      {/* 1. Header Profile */}
+      {/* 1. Header Profile (Clickable to Edit Profile) */}
       <View
         style={[
           styles.profile,
@@ -26,29 +92,79 @@ export default function HomeScreen() {
           }
         ]}
       >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarEmoji}>👮‍♂️</Text>
-        </View>
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={styles.profileName}>พงษ์พล อุทกานต์ภัทรกุล</Text>
-          <Text style={styles.profileRole}>รปภ. ประจำกะดึก</Text>
-        </View>
-        <Pressable hitSlop={10} style={styles.notifBtn}>
+        <Pressable
+          style={({ pressed }) => [styles.profileClickArea, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push("/profile")}
+        >
+          <View style={styles.avatar}>
+            {profile.avatarUri ? (
+              <Image source={{ uri: profile.avatarUri }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarEmoji}>{profile.avatarEmoji || "👮‍♂️"}</Text>
+            )}
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.profileName}>{profile.name}</Text>
+            <Text style={styles.profileRole}>{profile.role}</Text>
+          </View>
+        </Pressable>
+        <Pressable
+          hitSlop={10}
+          style={styles.notifBtn}
+          onPress={() => router.push("/notifications")}
+        >
           <Ionicons name="notifications-outline" size={26} color="white" />
+          {unreadCount > 0 && (
+            <View style={styles.notifBadge}>
+              <Text style={styles.notifBadgeText}>
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </Text>
+            </View>
+          )}
         </Pressable>
       </View>
 
       {/* Main Container */}
       <View style={styles.body}>
-        {/* 2. Shift Info Card */}
+        {/* Factory Banner */}
+        <View style={styles.factoryCard}>
+          <View style={styles.factoryIconWrap}>
+            <Ionicons name="business" size={18} color="#0C4A94" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.factoryLabel}>โรงงานประจำการ</Text>
+            <Text style={styles.factoryName} numberOfLines={1}>
+              {factory.name}
+            </Text>
+          </View>
+        </View>
+
+        {/* 2. Dynamic Shift Info Card (Static Display) */}
         <View style={styles.shiftCard}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.shiftDate}>วันพุธที่ 14 พ.ค. 2567</Text>
-            <Text style={styles.shiftTime}>เข้ากะเวลา 20:00 น.</Text>
+            <Text style={styles.shiftDate}>{getTodayThaiDate()}</Text>
+            <Text style={styles.shiftTime}>{shiftStatusConfig.timeText}</Text>
           </View>
-          <View style={styles.shiftBadge}>
-            <View style={styles.statusDot} />
-            <Text style={styles.shiftBadgeText}>กำลังปฏิบัติงาน</Text>
+          <View
+            style={[
+              styles.shiftBadge,
+              { backgroundColor: shiftStatusConfig.badgeBg }
+            ]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: shiftStatusConfig.dotColor }
+              ]}
+            />
+            <Text
+              style={[
+                styles.shiftBadgeText,
+                { color: shiftStatusConfig.textColor }
+              ]}
+            >
+              {shiftStatusConfig.label}
+            </Text>
           </View>
         </View>
 
@@ -81,13 +197,15 @@ export default function HomeScreen() {
               <Ionicons name="location" size={38} color="white" />
             </View>
             <Text style={styles.gridTitle}>ลงเวลา / ตรวจจุด</Text>
-            <Text style={styles.gridSub}>0/32 จุด</Text>
+            <Text style={styles.gridSub}>
+              {stats.completedPoints}/{stats.totalPoints} จุด
+            </Text>
           </Pressable>
 
           {/* Right Card: แจ้งเหตุฉุกเฉิน */}
           <Pressable
             style={({ pressed }) => [styles.gridCard, styles.gridCardRed, pressed && styles.btnPressed]}
-            onPress={() => router.push("/(tabs)/emergency")}
+            onPress={() => router.push("/emergency-report")}
           >
             <View style={styles.gridIconWrap}>
               <Ionicons name="warning" size={38} color="white" />
@@ -97,13 +215,13 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* 5. Summary Stats Card */}
+        {/* 5. Summary Stats Card (Static Display - ดึงข้อมูลตรงจากหน้าสรุปผล / patrolStore) */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             {/* Stat 1 */}
             <View style={styles.statCol}>
               <Text style={styles.statLabel}>ตรวจแล้ว</Text>
-              <Text style={styles.statValBlue}>0</Text>
+              <Text style={styles.statValBlue}>{stats.completedPoints}</Text>
               <Text style={styles.statUnit}>จุด</Text>
             </View>
 
@@ -112,7 +230,7 @@ export default function HomeScreen() {
             {/* Stat 2 */}
             <View style={styles.statCol}>
               <Text style={styles.statLabel}>ตรวจล่าช้า</Text>
-              <Text style={styles.statValRed}>0</Text>
+              <Text style={styles.statValRed}>{stats.lateCount}</Text>
               <Text style={styles.statUnit}>จุด</Text>
             </View>
 
@@ -121,13 +239,11 @@ export default function HomeScreen() {
             {/* Stat 3 */}
             <View style={styles.statCol}>
               <Text style={styles.statLabel}>คะแนนวันนี้</Text>
-              <Text style={styles.statValDark}>-</Text>
+              <Text style={styles.statValDark}>{stats.score}</Text>
               <Text style={styles.statUnit}>คะแนน</Text>
             </View>
           </View>
         </View>
-
-        <Text style={styles.updateTimeText}>อัปเดตล่าสุด 09:30 น.</Text>
       </View>
     </ScrollView>
   );
@@ -148,6 +264,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center"
   },
+  profileClickArea: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center"
+  },
   avatar: {
     width: 58,
     height: 58,
@@ -156,7 +277,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2.5,
-    borderColor: "#DCE8F7"
+    borderColor: "#DCE8F7",
+    overflow: "hidden"
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%"
   },
   avatarEmoji: {
     fontSize: 32
@@ -178,12 +304,75 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     backgroundColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    position: "relative"
+  },
+  notifBadge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    backgroundColor: "#EF4444",
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: "#0C4A94"
+  },
+  notifBadgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "900"
   },
   body: {
     paddingHorizontal: 15,
     paddingTop: 16,
     gap: 14
+  },
+  factoryCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0F6FF",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "#D0E2FF",
+    gap: 10
+  },
+  factoryIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0"
+  },
+  factoryLabel: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "700"
+  },
+  factoryName: {
+    fontSize: 13.5,
+    fontWeight: "800",
+    color: "#0C4A94",
+    marginTop: 1
+  },
+  factoryCodeBadge: {
+    backgroundColor: "#0C4A94",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8
+  },
+  factoryCodeText: {
+    color: "white",
+    fontSize: 10.5,
+    fontWeight: "800"
   },
   shiftCard: {
     paddingVertical: 16,
