@@ -73,10 +73,11 @@ export type CheckPointMobileData = {
       soundEnabled: boolean;
       soundVolume: number;
       selectedSoundId: string;
+      selectedSoundName?: string;
+      reminderTime?: string;
+      vibrationEnabled?: boolean;
       watermarkEnabled: boolean;
-      highAccuracyGps: boolean;
-      keepScreenAwake: boolean;
-      offlineMode: boolean;
+      autoFlashNight?: boolean;
     };
     syncMeta: {
       lastSyncedAt: string;

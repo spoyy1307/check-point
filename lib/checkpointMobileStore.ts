@@ -26,10 +26,11 @@ let checkpointMobileState: CheckPointMobileData["check-point-mobile"] = {
     soundEnabled: true,
     soundVolume: 1.0,
     selectedSoundId: "beep",
+    selectedSoundName: "เสียงบี๊บมาตรฐาน (Loud Beep)",
+    reminderTime: "เตือนล่วงหน้า 5 นาที (แนะนำ)",
+    vibrationEnabled: true,
     watermarkEnabled: true,
-    highAccuracyGps: true,
-    keepScreenAwake: true,
-    offlineMode: true
+    autoFlashNight: true
   },
   syncMeta: {
     lastSyncedAt: new Date().toISOString(),

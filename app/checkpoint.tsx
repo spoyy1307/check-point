@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  Vibration,
   View
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -237,8 +238,16 @@ export default function CheckpointScreen() {
 
     if (!result) return;
 
-    // Play scan confirmation sound + haptic feedback
-    soundHelper.playSound("beep");
+    // Play scan confirmation sound + haptic feedback if enabled in settings
+    const currentSettings = cpStore.getSettings();
+    if (currentSettings.soundEnabled) {
+      soundHelper.playSound(
+        currentSettings.selectedSoundId || "beep",
+        currentSettings.soundVolume
+      );
+    } else if (currentSettings.vibrationEnabled) {
+      Vibration.vibrate(80);
+    }
 
     if (result.isRoundCompleted) {
       setShowCompletionModal(true);

@@ -8,6 +8,7 @@ import {
   Switch,
   Text,
   TextInput,
+  Vibration,
   View
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,24 +44,32 @@ export default function AppSettingsScreen() {
       ? soundHelper.getSounds()
       : DEFAULT_SOUNDS
   );
-  const [selectedSoundId, setSelectedSoundId] = useState<string>("beep");
-  const [selectedSoundName, setSelectedSoundName] = useState<string>("เสียงบี๊บมาตรฐาน (Loud Beep)");
-  const [selectedVolume, setSelectedVolume] = useState<number>(globalSettings.soundVolume ?? 1.0);
+  const [selectedSoundId, setSelectedSoundId] = useState<string>(
+    globalSettings.selectedSoundId || "beep"
+  );
+  const [selectedSoundName, setSelectedSoundName] = useState<string>(
+    globalSettings.selectedSoundName || "เสียงบี๊บมาตรฐาน (Loud Beep)"
+  );
+  const [selectedVolume, setSelectedVolume] = useState<number>(
+    globalSettings.soundVolume ?? 1.0
+  );
 
   // Settings State (Initialized from global reactive store)
   const [soundEnabled, setSoundEnabled] = useState(globalSettings.soundEnabled ?? true);
-  const [selectedReminder, setSelectedReminder] = useState(REMINDER_OPTIONS[0]);
-  const [vibrationEnabled, setVibrationEnabled] = useState(true);
+  const [selectedReminder, setSelectedReminder] = useState(
+    globalSettings.reminderTime || REMINDER_OPTIONS[0]
+  );
+  const [vibrationEnabled, setVibrationEnabled] = useState(
+    globalSettings.vibrationEnabled ?? true
+  );
 
   // Camera & Evidence Watermark Settings
-  const [watermarkEnabled, setWatermarkEnabled] = useState(globalSettings.watermarkEnabled ?? true);
-  const [autoFlashNight, setAutoFlashNight] = useState(true);
-
-  // GPS & Patrol Screen
-  const [highAccuracyGps, setHighAccuracyGps] = useState(globalSettings.highAccuracyGps ?? true);
-  const [keepScreenAwake, setKeepScreenAwake] = useState(globalSettings.keepScreenAwake ?? true);
-  const [autoSync, setAutoSync] = useState(true);
-  const [offlineMode, setOfflineMode] = useState(globalSettings.offlineMode ?? true);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(
+    globalSettings.watermarkEnabled ?? true
+  );
+  const [autoFlashNight, setAutoFlashNight] = useState(
+    globalSettings.autoFlashNight ?? true
+  );
 
   // Modal Pickers
   const [showSoundModal, setShowSoundModal] = useState(false);
@@ -94,8 +103,8 @@ export default function AppSettingsScreen() {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  const handleTestSound = (soundIdOrUri: string) => {
-    soundHelper.playSound(soundIdOrUri);
+  const handleTestSound = (soundIdOrUri: string, overrideVol?: number) => {
+    soundHelper.playSound(soundIdOrUri, overrideVol ?? selectedVolume);
   };
 
   const handlePickAudioFile = async () => {
@@ -112,6 +121,10 @@ export default function AppSettingsScreen() {
         const newSound = soundHelper.addCustomSound(defaultName, file.uri);
         setSelectedSoundId(newSound.id);
         setSelectedSoundName(newSound.name);
+        cpStore.updateSettings({
+          selectedSoundId: newSound.id,
+          selectedSoundName: newSound.name
+        });
         handleTestSound(newSound.uri!);
 
         Alert.alert(
@@ -152,6 +165,10 @@ export default function AppSettingsScreen() {
     const newSound = soundHelper.addCustomSound(soundName, recordedUri);
     setSelectedSoundId(newSound.id);
     setSelectedSoundName(newSound.name);
+    cpStore.updateSettings({
+      selectedSoundId: newSound.id,
+      selectedSoundName: newSound.name
+    });
     setShowRecordModal(false);
     setRecordedUri(null);
 
@@ -173,6 +190,10 @@ export default function AppSettingsScreen() {
             const first = soundHelper.getSounds()[0];
             setSelectedSoundId(first.id);
             setSelectedSoundName(first.name);
+            cpStore.updateSettings({
+              selectedSoundId: first.id,
+              selectedSoundName: first.name
+            });
           }
         }
       }
@@ -209,7 +230,13 @@ export default function AppSettingsScreen() {
               </View>
               <Switch
                 value={soundEnabled}
-                onValueChange={setSoundEnabled}
+                onValueChange={(val) => {
+                  setSoundEnabled(val);
+                  cpStore.updateSettings({ soundEnabled: val });
+                  if (val) {
+                    soundHelper.playSound(selectedSoundId);
+                  }
+                }}
                 trackColor={{ false: "#CBD5E1", true: "#0C4A94" }}
                 thumbColor="white"
               />
@@ -296,7 +323,13 @@ export default function AppSettingsScreen() {
               </View>
               <Switch
                 value={vibrationEnabled}
-                onValueChange={setVibrationEnabled}
+                onValueChange={(val) => {
+                  setVibrationEnabled(val);
+                  cpStore.updateSettings({ vibrationEnabled: val });
+                  if (val) {
+                    Vibration.vibrate(80);
+                  }
+                }}
                 trackColor={{ false: "#CBD5E1", true: "#0C4A94" }}
                 thumbColor="white"
               />
@@ -341,95 +374,9 @@ export default function AppSettingsScreen() {
               </View>
               <Switch
                 value={autoFlashNight}
-                onValueChange={setAutoFlashNight}
-                trackColor={{ false: "#CBD5E1", true: "#0C4A94" }}
-                thumbColor="white"
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* หมวด 3: ระบบพิกัดและการปฏิบัติหน้าที่ */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ระบบพิกัดและความปลอดภัยขณะปฏิบัติหน้าที่</Text>
-          <View style={styles.card}>
-            {/* GPS ความแม่นยำสูง */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="navigate-outline" size={22} color="#0C4A94" />
-                <View style={{ flex: 1, paddingRight: 10 }}>
-                  <Text style={styles.settingLabel}>GPS ความแม่นยำสูง (High Accuracy)</Text>
-                  <Text style={styles.settingSub}>ระบุตำแหน่งในระยะ 100 เมตรเพื่อความแม่นยำ</Text>
-                </View>
-              </View>
-              <Switch
-                value={highAccuracyGps}
                 onValueChange={(val) => {
-                  setHighAccuracyGps(val);
-                  cpStore.updateSettings({ highAccuracyGps: val });
-                }}
-                trackColor={{ false: "#CBD5E1", true: "#0C4A94" }}
-                thumbColor="white"
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* เปิดหน้าจอค้างไว้ขณะเดินตรวจ */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="eye-outline" size={22} color="#0C4A94" />
-                <View style={{ flex: 1, paddingRight: 10 }}>
-                  <Text style={styles.settingLabel}>เปิดหน้าจอค้างขณะเดินตรวจ</Text>
-                  <Text style={styles.settingSub}>ป้องกันหน้าจอล็อกดับขณะกำลังตรวจจุด</Text>
-                </View>
-              </View>
-              <Switch
-                value={keepScreenAwake}
-                onValueChange={(val) => {
-                  setKeepScreenAwake(val);
-                  cpStore.updateSettings({ keepScreenAwake: val });
-                }}
-                trackColor={{ false: "#CBD5E1", true: "#0C4A94" }}
-                thumbColor="white"
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* ซิงค์ข้อมูลอัตโนมัติ */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="cloud-upload-outline" size={22} color="#0C4A94" />
-                <View style={{ flex: 1, paddingRight: 10 }}>
-                  <Text style={styles.settingLabel}>ซิงค์ข้อมูลขึ้นคลาวด์อัตโนมัติ</Text>
-                  <Text style={styles.settingSub}>ส่งผลการตรวจไปยังศูนย์ควบคุม 24 ชม. ทันที</Text>
-                </View>
-              </View>
-              <Switch
-                value={autoSync}
-                onValueChange={setAutoSync}
-                trackColor={{ false: "#CBD5E1", true: "#0C4A94" }}
-                thumbColor="white"
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* บันทึกออฟไลน์ */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="save-outline" size={22} color="#0C4A94" />
-                <View style={{ flex: 1, paddingRight: 10 }}>
-                  <Text style={styles.settingLabel}>บันทึกออฟไลน์เมื่อไม่มีเน็ต</Text>
-                  <Text style={styles.settingSub}>เก็บประวัติไว้ในเครื่องและส่งเมื่อต่อเน็ตได้</Text>
-                </View>
-              </View>
-              <Switch
-                value={offlineMode}
-                onValueChange={(val) => {
-                  setOfflineMode(val);
-                  cpStore.updateSettings({ offlineMode: val });
+                  setAutoFlashNight(val);
+                  cpStore.updateSettings({ autoFlashNight: val });
                 }}
                 trackColor={{ false: "#CBD5E1", true: "#0C4A94" }}
                 thumbColor="white"
@@ -467,6 +414,10 @@ export default function AppSettingsScreen() {
                       onPress={() => {
                         setSelectedSoundId(item.id);
                         setSelectedSoundName(item.name);
+                        cpStore.updateSettings({
+                          selectedSoundId: item.id,
+                          selectedSoundName: item.name
+                        });
                         handleTestSound(item.uri || item.id);
                       }}
                     >
@@ -725,6 +676,7 @@ export default function AppSettingsScreen() {
                     style={[styles.soundItem, isSelected && styles.soundItemActive]}
                     onPress={() => {
                       setSelectedReminder(opt);
+                      cpStore.updateSettings({ reminderTime: opt });
                       setShowReminderModal(false);
                     }}
                   >
@@ -779,7 +731,8 @@ export default function AppSettingsScreen() {
                     onPress={() => {
                       setSelectedVolume(opt.val);
                       soundHelper.setVolume(opt.val);
-                      handleTestSound(selectedSoundId);
+                      cpStore.updateSettings({ soundVolume: opt.val });
+                      handleTestSound(selectedSoundId, opt.val);
                       setShowVolumeModal(false);
                     }}
                   >
