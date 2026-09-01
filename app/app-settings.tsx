@@ -18,6 +18,7 @@ import { COLORS } from "../constants/colors";
 import TopBar from "../components/TopBar";
 import { SoundOption, DEFAULT_SOUNDS, soundHelper } from "../lib/soundHelper";
 import { useCheckpointMobileStore } from "../lib/checkpointMobileStore";
+import { patrolReminderEngine } from "../lib/patrolReminderEngine";
 
 export const REMINDER_OPTIONS = [
   "เตือนล่วงหน้า 5 นาที (แนะนำ)",
@@ -698,6 +699,18 @@ export default function AppSettingsScreen() {
                 );
               })}
             </View>
+
+            {/* Test Reminder Trigger Button */}
+            <Pressable
+              style={({ pressed }) => [styles.addCustomSoundBtn, pressed && styles.btnPressed]}
+              onPress={() => {
+                setShowReminderModal(false);
+                patrolReminderEngine.triggerInstantTest("patrol", 2);
+              }}
+            >
+              <Ionicons name="flash" size={18} color="#0C4A94" />
+              <Text style={styles.addCustomSoundBtnText}>⚡ ทดสอบการเด้งเตือนรอบตรวจทันที</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
