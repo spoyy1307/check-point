@@ -5,9 +5,11 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { COLORS } from "../constants/colors";
 import GlobalPushBanner from "../components/GlobalPushBanner";
 import { patrolReminderEngine } from "../lib/patrolReminderEngine";
+import { systemNotificationHelper } from "../lib/systemNotificationHelper";
 
 export default function RootLayout() {
   useEffect(() => {
+    systemNotificationHelper.init();
     patrolReminderEngine.start();
     return () => {
       patrolReminderEngine.stop();

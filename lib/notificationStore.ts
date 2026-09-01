@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { NotificationItem } from "../types/notification";
+import { systemNotificationHelper } from "./systemNotificationHelper";
 
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
@@ -151,6 +152,7 @@ export const notificationStore = {
     notify();
     if (showBanner) {
       notifyBanner(item);
+      systemNotificationHelper.presentSystemNotification(item);
     }
   },
 
