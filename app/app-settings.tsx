@@ -699,18 +699,6 @@ export default function AppSettingsScreen() {
                 );
               })}
             </View>
-
-            {/* Test Reminder Trigger Button */}
-            <Pressable
-              style={({ pressed }) => [styles.addCustomSoundBtn, pressed && styles.btnPressed]}
-              onPress={() => {
-                setShowReminderModal(false);
-                patrolReminderEngine.triggerInstantTest("patrol", 2);
-              }}
-            >
-              <Ionicons name="flash" size={18} color="#0C4A94" />
-              <Text style={styles.addCustomSoundBtnText}>⚡ ทดสอบการเด้งเตือนรอบตรวจทันที</Text>
-            </Pressable>
           </View>
         </View>
       </Modal>

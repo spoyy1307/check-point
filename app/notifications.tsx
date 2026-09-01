@@ -124,31 +124,6 @@ export default function NotificationsScreen() {
         )}
       </View>
 
-      {/* Real-time Push Alert Testing Bar */}
-      <View style={styles.testBannerContainer}>
-        <View style={styles.testBannerHeader}>
-          <Ionicons name="flash" size={13} color="#D97706" />
-          <Text style={styles.testBannerHeaderText}>ทดสอบระบบแจ้งเตือนเด้งหน้าจอ (Real-Time Push Alert)</Text>
-        </View>
-        <View style={styles.testBtnRow}>
-          <Pressable
-            style={({ pressed }) => [styles.testBtnPatrol, pressed && styles.btnPressed]}
-            onPress={() => patrolReminderEngine.triggerInstantTest("patrol", 2)}
-          >
-            <Ionicons name="alarm" size={14} color="#0C4A94" />
-            <Text style={styles.testBtnPatrolText}>เด้งเตือนรอบตรวจ</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [styles.testBtnAdmin, pressed && styles.btnPressed]}
-            onPress={() => patrolReminderEngine.triggerInstantTest("announcement")}
-          >
-            <Ionicons name="megaphone" size={14} color="#2563EB" />
-            <Text style={styles.testBtnAdminText}>เด้งข้อความแอดมิน</Text>
-          </Pressable>
-        </View>
-      </View>
-
       {/* 2. Filter Category Pills (แถบกรองหมวดหมู่) */}
       <View style={styles.filterBarContainer}>
         <ScrollView
@@ -774,70 +749,6 @@ const styles = StyleSheet.create({
     color: "#0C4A94",
     fontSize: 12,
     fontWeight: "800"
-  },
-
-  // Test Banner Bar
-  testBannerContainer: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: "#FFFBEB",
-    borderWidth: 1,
-    borderColor: "#FDE68A",
-    borderRadius: 14,
-    padding: 10
-  },
-  testBannerHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 8
-  },
-  testBannerHeaderText: {
-    fontSize: 11.5,
-    fontWeight: "800",
-    color: "#92400E"
-  },
-  testBtnRow: {
-    flexDirection: "row",
-    gap: 8
-  },
-  testBtnPatrol: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#CCE0FA",
-    borderRadius: 10,
-    paddingVertical: 7
-  },
-  testBtnPatrolText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#0C4A94"
-  },
-  testBtnAdmin: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    borderRadius: 10,
-    paddingVertical: 7
-  },
-  testBtnAdminText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#2563EB"
-  },
-  btnPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.98 }]
   },
 
   // 2. Filter Pills
