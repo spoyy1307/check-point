@@ -1,0 +1,265 @@
+// ==============================================================================
+// PRISMA SCHEMA - CHECK POINT MOBILE SYSTEM
+// ==============================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. โรงงาน / สาขา
+model CpFactory {
+  id               String   @id @default(uuid())
+  code             String   @unique
+  name             String
+  address          String?
+  province         String?
+  latitude         Decimal  @default(14.9033) @db.Decimal(10, 8)
+  longitude        Decimal  @default(102.0562) @db.Decimal(11, 8)
+  radiusMeters     Int      @default(200)
+  adminPin         String   @default("123456")
+  socHotline       String?  @default("02-999-8888")
+  supervisorPhone  String?  @default("089-999-8877")
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  guards           CpGuardAccount[]
+  shiftLogs        CpShiftLog[]
+  checkpoints      CpCheckpoint[]
+  patrolSchedules  CpPatrolSchedule[]
+  roundExecutions  CpRoundExecution[]
+  checkpointScans  CpCheckpointScan[]
+  emergencyIncidents CpEmergencyIncident[]
+  notifications    CpNotification[]
+  appSettings      CpAppSetting[]
+
+  @@map("cp_factories")
+}
+
+// 2. บัญชี รปภ.
+model CpGuardAccount {
+  id           String   @id @default(uuid())
+  employeeId   String   @unique
+  factoryId    String
+  fullName     String
+  phone        String?
+  role         String   @default("รปภ. ประจำกะดึก")
+  assignedZone String?  @default("ทุกโซนพื้นที่ส่วนกลาง")
+  avatarUrl    String?
+  avatarEmoji  String?  @default("👮")
+  pinCode      String   @default("123456")
+  startDate    DateTime @default(now())
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  factory      CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  shiftLogs    CpShiftLog[]
+  roundExecutions CpRoundExecution[]
+  checkpointScans CpCheckpointScan[]
+  emergencyIncidents CpEmergencyIncident[]
+  notifications    CpNotification[]
+
+  @@map("cp_guard_accounts")
+}
+
+// 3. บันทึกลงเวลากะ
+model CpShiftLog {
+  id                   String    @id @default(uuid())
+  factoryId            String
+  guardId              String
+  shiftName            String
+  shiftDate            DateTime  @default(now()) @db.Date
+  checkInTime          DateTime?
+  checkInLatitude      Decimal?  @db.Decimal(10, 8)
+  checkInLongitude     Decimal?  @db.Decimal(11, 8)
+  checkInDeviceId      String?
+  checkOutTime         DateTime?
+  checkOutLatitude     Decimal?  @db.Decimal(10, 8)
+  checkOutLongitude    Decimal?  @db.Decimal(11, 8)
+  totalWorkingMinutes  Int       @default(0)
+  status               String    @default("pending") // 'pending', 'on_duty', 'completed', 'late'
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  factory              CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  guard                CpGuardAccount @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  roundExecutions      CpRoundExecution[]
+
+  @@map("cp_shift_logs")
+}
+
+// 4. มาสเตอร์จุดตรวจที่แอดมินกำหนด
+model CpCheckpoint {
+  id                  String    @id @default(uuid())
+  factoryId           String
+  pointNumber         Int
+  name                String
+  description         String?
+  targetTimeDesc      String?
+  latitude            Decimal   @db.Decimal(10, 8)
+  longitude           Decimal   @db.Decimal(11, 8)
+  allowedRadiusMeters Int       @default(50)
+  nfcTagUid           String?
+  qrCodeData          String?
+  sequenceOrder       Int       @default(1)
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  factory             CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  scans               CpCheckpointScan[]
+
+  @@map("cp_checkpoints")
+}
+
+// 5. ตารางรอบตรวจที่แอดมินกำหนด
+model CpPatrolSchedule {
+  id           String    @id @default(uuid())
+  factoryId    String
+  roundNumber  Int
+  roundName    String
+  startTime    String    // '20:00:00'
+  endTime      String    // '22:00:00'
+  pointsCount  Int       @default(8)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  factory      CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  executions   CpRoundExecution[]
+
+  @@map("cp_patrol_schedules")
+}
+
+// 6. บันทึกผลการเดินตรวจรอบจริง
+model CpRoundExecution {
+  id                   String    @id @default(uuid())
+  shiftLogId           String?
+  scheduleId           String?
+  factoryId            String
+  guardId              String
+  roundNumber          Int
+  status               String    @default("pending") // 'pending', 'in_progress', 'completed', 'late', 'missed'
+  startedAt            DateTime?
+  finishedAt           DateTime?
+  completedPoints      Int       @default(0)
+  totalPoints          Int       @default(8)
+  onTimePoints         Int       @default(0)
+  latePoints           Int       @default(0)
+  missedPoints         Int       @default(0)
+  roundScore           Int       @default(100)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  factory              CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  guard                CpGuardAccount @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  shiftLog             CpShiftLog? @relation(fields: [shiftLogId], references: [id], onDelete: SetNull)
+  schedule             CpPatrolSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  scans                CpCheckpointScan[]
+
+  @@map("cp_round_executions")
+}
+
+// 7. บันทึกการสแกนตรวจแต่ละจุด
+model CpCheckpointScan {
+  id                   String    @id @default(uuid())
+  roundExecutionId     String
+  checkpointId         String
+  guardId              String
+  factoryId            String
+  scannedAt            DateTime  @default(now())
+  scanStatus           String    @default("on_time") // 'on_time', 'late', 'skipped'
+  latitude             Decimal?  @db.Decimal(10, 8)
+  longitude            Decimal?  @db.Decimal(11, 8)
+  accuracyMeters       Decimal?  @db.Decimal(6, 2)
+  distanceMeters       Decimal?  @db.Decimal(8, 2)
+  nfcVerified          Boolean   @default(false)
+  qrVerified           Boolean   @default(false)
+  photos               Json?     @default("[]")
+  lateReason           String?
+  remarks              String?
+  createdAt            DateTime  @default(now())
+
+  roundExecution       CpRoundExecution @relation(fields: [roundExecutionId], references: [id], onDelete: Cascade)
+  checkpoint           CpCheckpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+  guard                CpGuardAccount @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  factory              CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
+  @@map("cp_checkpoint_scans")
+}
+
+// 8. บันทึกแจ้งเหตุฉุกเฉิน
+model CpEmergencyIncident {
+  id                   String    @id @default(uuid())
+  factoryId            String
+  reporterGuardId      String
+  incidentType         String
+  severityLevel        String    @default("high")
+  locationName         String
+  latitude             Decimal?  @db.Decimal(10, 8)
+  longitude            Decimal?  @db.Decimal(11, 8)
+  details              String?
+  photos               Json?     @default("[]")
+  audioRecordUrl       String?
+  status               String    @default("reported")
+  resolvedAt           DateTime?
+  resolvedBy           String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  factory              CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  reporterGuard        CpGuardAccount @relation(fields: [reporterGuardId], references: [id], onDelete: Cascade)
+
+  @@map("cp_emergency_incidents")
+}
+
+// 9. การแจ้งเตือน & ประกาศ
+model CpNotification {
+  id                   String    @id @default(uuid())
+  factoryId            String?
+  title                String
+  category             String    @default("patrol") // 'patrol', 'emergency', 'announcement'
+  priority             String    @default("normal")
+  summary              String?
+  content              String?
+  bannerImageUrl       String?
+  publishedBy          String?
+  validUntil           DateTime?
+  targetGuardId        String?
+  isRead               Boolean   @default(false)
+  acknowledgedAt       DateTime?
+  createdAt            DateTime  @default(now())
+
+  factory              CpFactory? @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  targetGuard          CpGuardAccount? @relation(fields: [targetGuardId], references: [id], onDelete: Cascade)
+
+  @@map("cp_notifications")
+}
+
+// 10. ตั้งค่าแอป & อุปกรณ์
+model CpAppSetting {
+  id                   String    @id @default(uuid())
+  factoryId            String
+  deviceId             String
+  soundEnabled         Boolean   @default(true)
+  soundVolume          Decimal   @default(1.00) @db.Decimal(3, 2)
+  selectedSoundId      String    @default("beep")
+  selectedSoundName    String    @default("เสียงบี๊บมาตรฐาน (Loud Beep)")
+  reminderMinutes      Int       @default(5)
+  vibrationEnabled     Boolean   @default(true)
+  watermarkEnabled     Boolean   @default(true)
+  autoFlashNight       Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  factory              CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
+  @@unique([factoryId, deviceId])
+  @@map("cp_app_settings")
+}
