@@ -1,0 +1,273 @@
+// Prisma Schema for Check Point Mobile & Security Management System
+// Compatible with PostgreSQL, MySQL, and SQLite
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. FACTORIES (ตารางข้อมูลโรงงาน / สาขา)
+model CpFactory {
+  id              String   @id @default(uuid()) @db.VarChar(50)
+  code            String   @unique @db.VarChar(30)
+  name            String   @db.VarChar(255)
+  address         String?  @db.Text
+  province        String?  @db.VarChar(100)
+  latitude        Decimal  @default(14.9033) @db.Decimal(10, 8)
+  longitude       Decimal  @default(102.0562) @db.Decimal(11, 8)
+  radiusMeters    Int      @default(200) @map("radius_meters")
+  adminPin        String   @default("123456") @map("admin_pin") @db.VarChar(255)
+  socHotline      String?  @default("02-999-8888") @map("soc_hotline") @db.VarChar(50)
+  supervisorPhone String?  @default("089-999-8877") @map("supervisor_phone") @db.VarChar(50)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  guards          CpGuardAccount[]
+  shiftLogs       CpShiftLog[]
+  checkpoints     CpCheckpoint[]
+  patrolSchedules CpPatrolSchedule[]
+  roundExecutions CpRoundExecution[]
+  emergencyIncidents CpEmergencyIncident[]
+  notifications   CpNotification[]
+  appSettings     CpAppSetting[]
+
+  @@map("cp_factories")
+}
+
+// 2. GUARD ACCOUNTS (ตารางบัญชีเจ้าหน้าที่ รปภ.)
+model CpGuardAccount {
+  id              String    @id @default(uuid()) @db.VarChar(50)
+  employeeId      String    @unique @map("employee_id") @db.VarChar(50)
+  factoryId       String    @map("factory_id") @db.VarChar(50)
+  fullName        String    @map("full_name") @db.VarChar(255)
+  phone           String?   @db.VarChar(50)
+  role            String    @default("รปภ. ประจำกะดึก") @db.VarChar(100)
+  assignedZone    String?   @default("ทุกโซนพื้นที่ส่วนกลาง") @map("assigned_zone") @db.VarChar(150)
+  avatarUrl       String?   @map("avatar_url") @db.Text
+  avatarEmoji     String?   @default("👮") @map("avatar_emoji") @db.VarChar(10)
+  pinCode         String    @default("123456") @map("pin_code") @db.VarChar(255)
+  startDate       DateTime? @default(now()) @map("start_date") @db.Date
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  factory         CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  shiftLogs       CpShiftLog[]
+  roundExecutions CpRoundExecution[]
+  checkpointScans CpCheckpointScan[]
+  emergencyIncidents CpEmergencyIncident[]
+  appSettings     CpAppSetting[]
+
+  @@index([factoryId])
+  @@map("cp_guard_accounts")
+}
+
+// 3. SHIFT LOGS (ตารางบันทึกการลงเวลากะ เข้า-ออกงาน)
+model CpShiftLog {
+  id                  String    @id @default(uuid()) @db.VarChar(50)
+  factoryId           String    @map("factory_id") @db.VarChar(50)
+  guardId             String    @map("guard_id") @db.VarChar(50)
+  shiftName           String    @map("shift_name") @db.VarChar(100)
+  shiftDate           DateTime  @default(now()) @map("shift_date") @db.Date
+  checkInTime         DateTime? @map("check_in_time") @db.Timestamptz(6)
+  checkInLatitude     Decimal?  @map("check_in_latitude") @db.Decimal(10, 8)
+  checkInLongitude    Decimal?  @map("check_in_longitude") @db.Decimal(11, 8)
+  checkInDeviceId     String?   @map("check_in_device_id") @db.VarChar(100)
+  checkOutTime        DateTime? @map("check_out_time") @db.Timestamptz(6)
+  checkOutLatitude    Decimal?  @map("check_out_latitude") @db.Decimal(10, 8)
+  checkOutLongitude   Decimal?  @map("check_out_longitude") @db.Decimal(11, 8)
+  totalWorkingMinutes Int?      @default(0) @map("total_working_minutes")
+  status              String    @default("pending") @db.VarChar(30)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  factory             CpFactory      @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  guard               CpGuardAccount @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  roundExecutions     CpRoundExecution[]
+
+  @@index([factoryId])
+  @@index([guardId])
+  @@index([shiftDate])
+  @@map("cp_shift_logs")
+}
+
+// 4. CHECKPOINTS (ตารางจุดตรวจที่แอดมินกำหนด)
+model CpCheckpoint {
+  id                  String   @id @default(uuid()) @db.VarChar(50)
+  factoryId           String   @map("factory_id") @db.VarChar(50)
+  pointNumber         Int      @map("point_number")
+  name                String   @db.VarChar(255)
+  description         String?  @db.Text
+  targetTimeDesc      String?  @map("target_time_desc") @db.VarChar(50)
+  latitude            Decimal  @db.Decimal(10, 8)
+  longitude           Decimal  @db.Decimal(11, 8)
+  allowedRadiusMeters Int      @default(50) @map("allowed_radius_meters")
+  nfcTagUid           String?  @map("nfc_tag_uid") @db.VarChar(100)
+  qrCodeData          String?  @map("qr_code_data") @db.VarChar(255)
+  sequenceOrder       Int      @default(1) @map("sequence_order")
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  factory             CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  scans               CpCheckpointScan[]
+
+  @@index([factoryId])
+  @@map("cp_checkpoints")
+}
+
+// 5. PATROL SCHEDULES (ตารางรอบตรวจประจำกะ)
+model CpPatrolSchedule {
+  id              String   @id @default(uuid()) @db.VarChar(50)
+  factoryId       String   @map("factory_id") @db.VarChar(50)
+  roundNumber     Int      @map("round_number")
+  roundName       String   @map("round_name") @db.VarChar(100)
+  startTime       String   @map("start_time") @db.VarChar(20) // e.g. "20:00:00"
+  endTime         String   @map("end_time") @db.VarChar(20)   // e.g. "22:00:00"
+  pointsCount     Int      @default(8) @map("points_count")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  factory         CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  roundExecutions CpRoundExecution[]
+
+  @@index([factoryId])
+  @@map("cp_patrol_schedules")
+}
+
+// 6. ROUND EXECUTIONS (ตารางบันทึกการเดินตรวจรอบจริง)
+model CpRoundExecution {
+  id                String    @id @default(uuid()) @db.VarChar(50)
+  shiftLogId        String?   @map("shift_log_id") @db.VarChar(50)
+  scheduleId        String?   @map("schedule_id") @db.VarChar(50)
+  factoryId         String    @map("factory_id") @db.VarChar(50)
+  guardId           String    @map("guard_id") @db.VarChar(50)
+  roundNumber       Int       @map("round_number")
+  status            String    @default("pending") @db.VarChar(30)
+  startedAt         DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt        DateTime? @map("finished_at") @db.Timestamptz(6)
+  completedPoints   Int       @default(0) @map("completed_points")
+  totalPoints       Int       @default(8) @map("total_points")
+  onTimePoints      Int       @default(0) @map("on_time_points")
+  latePoints        Int       @default(0) @map("late_points")
+  missedPoints      Int       @default(0) @map("missed_points")
+  roundScore        Int       @default(0) @map("round_score")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  factory           CpFactory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  guard             CpGuardAccount    @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  shiftLog          CpShiftLog?       @relation(fields: [shiftLogId], references: [id], onDelete: SetNull)
+  schedule          CpPatrolSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  scans             CpCheckpointScan[]
+
+  @@index([factoryId])
+  @@index([guardId])
+  @@index([shiftLogId])
+  @@map("cp_round_executions")
+}
+
+// 7. CHECKPOINT SCANS (ตารางบันทึกการสแกนตรวจแต่ละจุด)
+model CpCheckpointScan {
+  id                String    @id @default(uuid()) @db.VarChar(50)
+  roundExecutionId  String    @map("round_execution_id") @db.VarChar(50)
+  checkpointId      String    @map("checkpoint_id") @db.VarChar(50)
+  guardId           String    @map("guard_id") @db.VarChar(50)
+  scannedAt         DateTime  @default(now()) @map("scanned_at") @db.Timestamptz(6)
+  scanStatus        String    @default("on_time") @map("scan_status") @db.VarChar(30)
+  latitude          Decimal?  @db.Decimal(10, 8)
+  longitude         Decimal?  @db.Decimal(11, 8)
+  accuracyMeters    Decimal?  @map("accuracy_meters") @db.Decimal(6, 2)
+  distanceMeters    Decimal?  @map("distance_meters") @db.Decimal(8, 2)
+  nfcVerified       Boolean   @default(false) @map("nfc_verified")
+  qrVerified        Boolean   @default(false) @map("qr_verified")
+  photos            Json?     @default("[]")
+  lateReason        String?   @map("late_reason") @db.Text
+  remarks           String?   @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  roundExecution    CpRoundExecution @relation(fields: [roundExecutionId], references: [id], onDelete: Cascade)
+  checkpoint        CpCheckpoint     @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+  guard             CpGuardAccount   @relation(fields: [guardId], references: [id], onDelete: Cascade)
+
+  @@index([roundExecutionId])
+  @@index([checkpointId])
+  @@index([guardId])
+  @@map("cp_checkpoint_scans")
+}
+
+// 8. EMERGENCY INCIDENTS (ตารางแจ้งเหตุฉุกเฉิน SOS)
+model CpEmergencyIncident {
+  id                String    @id @default(uuid()) @db.VarChar(50)
+  factoryId         String    @map("factory_id") @db.VarChar(50)
+  reporterGuardId   String    @map("reporter_guard_id") @db.VarChar(50)
+  incidentType      String    @map("incident_type") @db.VarChar(100)
+  severityLevel     String    @default("high") @map("severity_level") @db.VarChar(30)
+  locationName      String?   @map("location_name") @db.VarChar(255)
+  latitude          Decimal?  @db.Decimal(10, 8)
+  longitude         Decimal?  @db.Decimal(11, 8)
+  details           String?   @db.Text
+  photos            Json?     @default("[]")
+  audioRecordUrl    String?   @map("audio_record_url") @db.Text
+  status            String    @default("active") @db.VarChar(30)
+  resolvedAt        DateTime? @map("resolved_at") @db.Timestamptz(6)
+  resolvedBy        String?   @map("resolved_by") @db.VarChar(255)
+  resolutionNote    String?   @map("resolution_note") @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  factory           CpFactory      @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  reporterGuard     CpGuardAccount @relation(fields: [reporterGuardId], references: [id], onDelete: Cascade)
+
+  @@index([factoryId])
+  @@index([status])
+  @@map("cp_emergency_incidents")
+}
+
+// 9. NOTIFICATIONS (ตารางแจ้งเตือนและประกาศจากส่วนกลาง)
+model CpNotification {
+  id                String    @id @default(uuid()) @db.VarChar(50)
+  factoryId         String    @map("factory_id") @db.VarChar(50)
+  title             String    @db.VarChar(255)
+  message           String    @db.Text
+  category          String    @default("announcement") @db.VarChar(50)
+  priority          String    @default("normal") @db.VarChar(30)
+  targetAudience    String    @default("all_guards") @map("target_audience") @db.VarChar(50)
+  isBroadcast       Boolean   @default(true) @map("is_broadcast")
+  scheduledTime     DateTime? @map("scheduled_time") @db.Timestamptz(6)
+  readByGuards      Json?     @default("[]") @map("read_by_guards")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  factory           CpFactory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
+  @@index([factoryId])
+  @@map("cp_notifications")
+}
+
+// 10. APP SETTINGS (ตารางตั้งค่าแอปพลิเคชันรายบุคคล / ประจำสาขา)
+model CpAppSetting {
+  id                String   @id @default(uuid()) @db.VarChar(50)
+  factoryId         String   @map("factory_id") @db.VarChar(50)
+  guardId           String?  @map("guard_id") @db.VarChar(50)
+  soundEnabled      Boolean  @default(true) @map("sound_enabled")
+  soundVolume       Decimal  @default(1.0) @map("sound_volume") @db.Decimal(3, 2)
+  selectedSoundId   String   @default("beep") @map("selected_sound_id") @db.VarChar(50)
+  selectedSoundName String   @default("เสียงบี๊บมาตรฐาน (Loud Beep)") @map("selected_sound_name") @db.VarChar(150)
+  reminderMinutes   Int      @default(5) @map("reminder_minutes")
+  watermarkEnabled  Boolean  @default(true) @map("watermark_enabled")
+  autoFlashNight    Boolean  @default(true) @map("auto_flash_night")
+  customSounds      Json?    @default("[]") @map("custom_sounds")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  factory           CpFactory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  guard             CpGuardAccount? @relation(fields: [guardId], references: [id], onDelete: Cascade)
+
+  @@unique([factoryId, guardId])
+  @@map("cp_app_settings")
+}
