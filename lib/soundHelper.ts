@@ -1,5 +1,6 @@
 import { Vibration } from "react-native";
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type SoundOption = {
   id: string;
@@ -54,15 +55,57 @@ export const DEFAULT_SOUNDS: SoundOption[] = [
   }
 ];
 
+const STORAGE_CUSTOM_SOUNDS_KEY = "checkpoint_custom_sounds_v1";
+const STORAGE_VOLUME_KEY = "checkpoint_app_volume_v1";
+
 let customSoundsList: SoundOption[] = [...DEFAULT_SOUNDS];
 let currentSoundObject: Audio.Sound | null = null;
 let currentRecording: Audio.Recording | null = null;
 let appVolume: number = 1.0;
+let isInitialized = false;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
 function notify() {
   listeners.forEach((l) => l());
+}
+
+// Load saved custom sounds & volume from local storage on app startup
+async function loadPersistedSounds() {
+  if (isInitialized) return;
+  try {
+    const savedSoundsJson = await AsyncStorage.getItem(STORAGE_CUSTOM_SOUNDS_KEY);
+    if (savedSoundsJson) {
+      const parsed: SoundOption[] = JSON.parse(savedSoundsJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        customSoundsList = [...parsed, ...DEFAULT_SOUNDS];
+      }
+    }
+    const savedVol = await AsyncStorage.getItem(STORAGE_VOLUME_KEY);
+    if (savedVol) {
+      const volNum = parseFloat(savedVol);
+      if (!isNaN(volNum)) {
+        appVolume = volNum;
+      }
+    }
+  } catch (err) {
+    console.log("Error loading custom sounds from storage:", err);
+  } finally {
+    isInitialized = true;
+    notify();
+  }
+}
+
+// Automatically initiate load
+loadPersistedSounds();
+
+async function saveCustomSounds() {
+  try {
+    const onlyCustom = customSoundsList.filter((s) => s.isCustom);
+    await AsyncStorage.setItem(STORAGE_CUSTOM_SOUNDS_KEY, JSON.stringify(onlyCustom));
+  } catch (err) {
+    console.log("Error saving custom sounds to storage:", err);
+  }
 }
 
 export const soundHelper = {
@@ -76,6 +119,7 @@ export const soundHelper = {
 
   setVolume(vol: number) {
     appVolume = Math.max(0.1, Math.min(1.0, vol));
+    AsyncStorage.setItem(STORAGE_VOLUME_KEY, appVolume.toString()).catch(() => {});
     notify();
   },
 
@@ -88,12 +132,14 @@ export const soundHelper = {
       isCustom: true
     };
     customSoundsList = [newSound, ...customSoundsList];
+    saveCustomSounds();
     notify();
     return newSound;
   },
 
   removeCustomSound(id: string) {
     customSoundsList = customSoundsList.filter((s) => s.id !== id);
+    saveCustomSounds();
     notify();
   },
 
@@ -120,33 +166,44 @@ export const soundHelper = {
         currentSoundObject = null;
       }
 
-      // Find sound URI
-      const found = customSoundsList.find((s) => s.id === soundIdOrUri || s.name === soundIdOrUri);
-      const url = found?.uri || soundIdOrUri || DEFAULT_SOUNDS[0].uri;
-      const targetVolume = overrideVol !== undefined ? overrideVol : appVolume;
+      let soundUri: string | null = null;
+      const targetSound = customSoundsList.find((s) => s.id === soundIdOrUri);
+
+      if (targetSound?.uri) {
+        soundUri = targetSound.uri;
+      } else if (soundIdOrUri.startsWith("file://") || soundIdOrUri.startsWith("http://") || soundIdOrUri.startsWith("https://")) {
+        soundUri = soundIdOrUri;
+      } else {
+        soundUri = DEFAULT_SOUNDS[0].uri!;
+      }
+
+      const volumeToPlay = typeof overrideVol === "number" ? overrideVol : appVolume;
 
       const { sound } = await Audio.Sound.createAsync(
-        { uri: url },
-        {
-          shouldPlay: true,
-          volume: targetVolume,
-          isMuted: false
-        }
+        { uri: soundUri },
+        { shouldPlay: true, volume: volumeToPlay }
       );
+
       currentSoundObject = sound;
-      await sound.setVolumeAsync(targetVolume);
-      await sound.playAsync();
+      await sound.setVolumeAsync(volumeToPlay);
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync().catch(() => {});
+          if (currentSoundObject === sound) {
+            currentSoundObject = null;
+          }
+        }
+      });
     } catch (err) {
-      Vibration.vibrate([0, 100, 50, 100]);
+      console.log("Error playing audio sound:", err);
     }
   },
 
   async startRecording(): Promise<boolean> {
     try {
       const permission = await Audio.requestPermissionsAsync();
-      if (!permission.granted) {
-        return false;
-      }
+      if (!permission.granted) return false;
 
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
