@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import { COLORS } from "../constants/colors";
 import TopBar from "../components/TopBar";
 import { SoundOption, DEFAULT_SOUNDS, soundHelper } from "../lib/soundHelper";
@@ -117,54 +118,79 @@ export default function AppSettingsScreen() {
     soundHelper.playSound(soundIdOrUri, overrideVol ?? selectedVolume);
   };
 
-  const handlePickAudioFile = async () => {
-    try {
-      setShowAddSoundModal(false);
-      let res;
+  const handlePickAudioFile = () => {
+    setShowAddSoundModal(false);
+    // Delay opening picker slightly so iOS modal dismiss animation finishes completely
+    setTimeout(async () => {
       try {
-        res = await DocumentPicker.getDocumentAsync({
-          type: [
-            "audio/*",
-            "public.audio",
-            "audio/mpeg",
-            "audio/mp3",
-            "audio/wav",
-            "audio/m4a",
-            "audio/x-m4a",
-            "audio/aac",
-            "audio/x-wav"
-          ],
-          copyToCacheDirectory: true
-        });
-      } catch {
-        // Fallback for devices that only accept universal wildcard
-        res = await DocumentPicker.getDocumentAsync({
-          type: "*/*",
-          copyToCacheDirectory: true
-        });
-      }
+        let res;
+        try {
+          res = await DocumentPicker.getDocumentAsync({
+            type: "*/*",
+            copyToCacheDirectory: true
+          });
+        } catch {
+          res = await DocumentPicker.getDocumentAsync({
+            copyToCacheDirectory: true
+          });
+        }
 
-      if (res && !res.canceled && res.assets && res.assets.length > 0) {
-        const file = res.assets[0];
-        const defaultName = file.name ? file.name.replace(/\.[^/.]+$/, "") : "เสียงไฟล์กำหนดเอง";
-        const newSound = soundHelper.addCustomSound(defaultName, file.uri);
-        setSelectedSoundId(newSound.id);
-        setSelectedSoundName(newSound.name);
-        cpStore.updateSettings({
-          selectedSoundId: newSound.id,
-          selectedSoundName: newSound.name
-        });
-        handleTestSound(newSound.uri!);
+        if (res && !res.canceled && res.assets && res.assets.length > 0) {
+          const file = res.assets[0];
+          const defaultName = file.name ? file.name.replace(/\.[^/.]+$/, "") : "เสียงไฟล์กำหนดเอง";
+          const newSound = soundHelper.addCustomSound(defaultName, file.uri);
+          setSelectedSoundId(newSound.id);
+          setSelectedSoundName(newSound.name);
+          cpStore.updateSettings({
+            selectedSoundId: newSound.id,
+            selectedSoundName: newSound.name
+          });
+          handleTestSound(newSound.uri!);
 
-        Alert.alert(
-          "✓ เพิ่มเสียงสำเร็จ",
-          `เพิ่มและเลือกใช้ไฟล์เสียง "${newSound.name}" สำหรับแจ้งเตือนตรวจจุดเรียบร้อยแล้ว`
-        );
+          Alert.alert(
+            "✓ เพิ่มเสียงสำเร็จ",
+            `เพิ่มและเลือกใช้ไฟล์เสียง "${newSound.name}" สำหรับแจ้งเตือนตรวจจุดเรียบร้อยแล้ว`
+          );
+        }
+      } catch (err) {
+        console.log("Error picking audio file:", err);
       }
-    } catch (err) {
-      console.log("Error picking audio file:", err);
-      Alert.alert("ไม่สามารถเปิดไฟล์เสียงได้", "โปรดลองเลือกไฟล์เสียงในรูปแบบ .mp3, .m4a หรือ .wav ใหม่อีกครั้ง");
-    }
+    }, 450);
+  };
+
+  const handlePickFromGallery = () => {
+    setShowAddSoundModal(false);
+    setTimeout(async () => {
+      try {
+        const res = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["videos", "images"],
+          quality: 0.8,
+          allowsEditing: false
+        });
+
+        if (!res.canceled && res.assets && res.assets.length > 0) {
+          const asset = res.assets[0];
+          const defaultName = asset.fileName
+            ? asset.fileName.replace(/\.[^/.]+$/, "")
+            : `เสียงจากแกลเลอรี ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
+          const newSound = soundHelper.addCustomSound(defaultName, asset.uri);
+          setSelectedSoundId(newSound.id);
+          setSelectedSoundName(newSound.name);
+          cpStore.updateSettings({
+            selectedSoundId: newSound.id,
+            selectedSoundName: newSound.name
+          });
+          handleTestSound(newSound.uri!);
+
+          Alert.alert(
+            "✓ เพิ่มเสียงสำเร็จ",
+            `เพิ่มและเลือกใช้ไฟล์เสียง "${newSound.name}" เรียบร้อยแล้ว`
+          );
+        }
+      } catch (err) {
+        console.log("Error picking from gallery:", err);
+      }
+    }, 450);
   };
 
   const handleStartRecord = async () => {
@@ -526,7 +552,7 @@ export default function AppSettingsScreen() {
                 <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
               </Pressable>
 
-              {/* Choice 2: เลือกไฟล์เสียงจากเครื่อง */}
+              {/* Choice 2: เลือกไฟล์เสียงจากเครื่อง / โฟลเดอร์ดาวน์โหลด */}
               <Pressable
                 style={({ pressed }) => [styles.addChoiceCard, pressed && styles.btnPressed]}
                 onPress={handlePickAudioFile}
@@ -535,9 +561,26 @@ export default function AppSettingsScreen() {
                   <Ionicons name="folder-open" size={24} color="#0C4A94" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.addChoiceTitle}>📁 เลือกไฟล์เสียงจากในเครื่อง</Text>
+                  <Text style={styles.addChoiceTitle}>📁 เลือกจากโฟลเดอร์ไฟล์ / ดาวน์โหลด</Text>
                   <Text style={styles.addChoiceSub}>
-                    รองรับไฟล์เสียง MP3, WAV, M4A, OGG
+                    เลือกไฟล์เสียง MP3, WAV, M4A, AAC จากในเครื่อง
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              </Pressable>
+
+              {/* Choice 3: เลือกจากคลังแกลเลอรี / สื่อในเครื่อง */}
+              <Pressable
+                style={({ pressed }) => [styles.addChoiceCard, pressed && styles.btnPressed]}
+                onPress={handlePickFromGallery}
+              >
+                <View style={[styles.addChoiceIconWrap, { backgroundColor: "#E0F2FE" }]}>
+                  <Ionicons name="images" size={24} color="#0284C7" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.addChoiceTitle}>🖼️ เลือกจากคลังแกลเลอรี / สื่อในเครื่อง</Text>
+                  <Text style={styles.addChoiceSub}>
+                    เปิดแกลเลอรีรูปภาพ/วิดีโอเพื่อดึงเสียง
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
