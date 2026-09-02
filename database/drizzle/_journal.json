@@ -1,0 +1,111 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1775030599535,
+      "tag": "0000_abnormal_angel",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775557471715,
+      "tag": "0001_tidy_randall",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777013963158,
+      "tag": "0002_past_mattie_franklin",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777100000000,
+      "tag": "0003_add_missing_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777200000000,
+      "tag": "0004_add_company",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777300000000,
+      "tag": "0005_add_visit_record_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777400000000,
+      "tag": "0006_add_vehicles_and_trip_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777500000000,
+      "tag": "0007_nullable_visit_record_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784688723942,
+      "tag": "0008_unknown_luke_cage",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784700000000,
+      "tag": "0009_add_notification_channels",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784710000000,
+      "tag": "0010_add_other_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787200000000,
+      "tag": "0011_add_remark_to_visit_records",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787300000000,
+      "tag": "0012_add_factory_app_access_code",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1787400000000,
+      "tag": "0013_create_factory_access_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788350000000,
+      "tag": "0014_create_checkpoint_patrol_tables",
+      "breakpoints": true
+    }
+  ]
+}

@@ -13,8 +13,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as DocumentPicker from "expo-document-picker";
-import * as ImagePicker from "expo-image-picker";
 import { COLORS } from "../constants/colors";
 import TopBar from "../components/TopBar";
 import { SoundOption, DEFAULT_SOUNDS, soundHelper } from "../lib/soundHelper";
@@ -78,7 +76,6 @@ export default function AppSettingsScreen() {
   const [showSoundModal, setShowSoundModal] = useState(false);
   const [showVolumeModal, setShowVolumeModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
-  const [showAddSoundModal, setShowAddSoundModal] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
 
   // Voice Recording State
@@ -116,81 +113,6 @@ export default function AppSettingsScreen() {
 
   const handleTestSound = (soundIdOrUri: string, overrideVol?: number) => {
     soundHelper.playSound(soundIdOrUri, overrideVol ?? selectedVolume);
-  };
-
-  const handlePickAudioFile = () => {
-    setShowAddSoundModal(false);
-    // Delay opening picker slightly so iOS modal dismiss animation finishes completely
-    setTimeout(async () => {
-      try {
-        let res;
-        try {
-          res = await DocumentPicker.getDocumentAsync({
-            type: "*/*",
-            copyToCacheDirectory: true
-          });
-        } catch {
-          res = await DocumentPicker.getDocumentAsync({
-            copyToCacheDirectory: true
-          });
-        }
-
-        if (res && !res.canceled && res.assets && res.assets.length > 0) {
-          const file = res.assets[0];
-          const defaultName = file.name ? file.name.replace(/\.[^/.]+$/, "") : "เสียงไฟล์กำหนดเอง";
-          const newSound = soundHelper.addCustomSound(defaultName, file.uri);
-          setSelectedSoundId(newSound.id);
-          setSelectedSoundName(newSound.name);
-          cpStore.updateSettings({
-            selectedSoundId: newSound.id,
-            selectedSoundName: newSound.name
-          });
-          handleTestSound(newSound.uri!);
-
-          Alert.alert(
-            "✓ เพิ่มเสียงสำเร็จ",
-            `เพิ่มและเลือกใช้ไฟล์เสียง "${newSound.name}" สำหรับแจ้งเตือนตรวจจุดเรียบร้อยแล้ว`
-          );
-        }
-      } catch (err) {
-        console.log("Error picking audio file:", err);
-      }
-    }, 450);
-  };
-
-  const handlePickFromGallery = () => {
-    setShowAddSoundModal(false);
-    setTimeout(async () => {
-      try {
-        const res = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ["videos", "images"],
-          quality: 0.8,
-          allowsEditing: false
-        });
-
-        if (!res.canceled && res.assets && res.assets.length > 0) {
-          const asset = res.assets[0];
-          const defaultName = asset.fileName
-            ? asset.fileName.replace(/\.[^/.]+$/, "")
-            : `เสียงจากแกลเลอรี ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
-          const newSound = soundHelper.addCustomSound(defaultName, asset.uri);
-          setSelectedSoundId(newSound.id);
-          setSelectedSoundName(newSound.name);
-          cpStore.updateSettings({
-            selectedSoundId: newSound.id,
-            selectedSoundName: newSound.name
-          });
-          handleTestSound(newSound.uri!);
-
-          Alert.alert(
-            "✓ เพิ่มเสียงสำเร็จ",
-            `เพิ่มและเลือกใช้ไฟล์เสียง "${newSound.name}" เรียบร้อยแล้ว`
-          );
-        }
-      } catch (err) {
-        console.log("Error picking from gallery:", err);
-      }
-    }, 450);
   };
 
   const handleStartRecord = async () => {
@@ -492,16 +414,16 @@ export default function AppSettingsScreen() {
               </View>
             </ScrollView>
 
-            {/* ปุ่มใหญ่ "+ เพิ่มเสียงแจ้งเตือนของคุณเอง" */}
+            {/* ปุ่มใหญ่ "+ อัดเสียงแจ้งเตือนของคุณเอง (ไมโครโฟน)" */}
             <Pressable
               style={({ pressed }) => [styles.addCustomSoundBtn, pressed && styles.btnPressed]}
               onPress={() => {
                 setShowSoundModal(false);
-                setShowAddSoundModal(true);
+                setShowRecordModal(true);
               }}
             >
-              <Ionicons name="add-circle" size={20} color="#0C4A94" />
-              <Text style={styles.addCustomSoundBtnText}>+ เพิ่มเสียงแจ้งเตือนของคุณเอง</Text>
+              <Ionicons name="mic-circle" size={22} color="#0C4A94" />
+              <Text style={styles.addCustomSoundBtnText}>+ อัดเสียงแจ้งเตือนของคุณเอง (ไมโครโฟน)</Text>
             </Pressable>
 
             <Pressable
@@ -514,83 +436,7 @@ export default function AppSettingsScreen() {
         </View>
       </Modal>
 
-      {/* Modal 2: เมนูเลือกว่าจะเพิ่มเสียงด้วยวิธีไหน (อัดเสียง / เลือกไฟล์) */}
-      <Modal visible={showAddSoundModal} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitle}>เพิ่มเสียงแจ้งเตือนใหม่</Text>
-                <Text style={styles.modalSub}>เลือกวิธีการเพิ่มเสียงของคุณ</Text>
-              </View>
-              <Pressable
-                style={styles.modalCloseBtn}
-                onPress={() => setShowAddSoundModal(false)}
-              >
-                <Ionicons name="close" size={22} color="#64748B" />
-              </Pressable>
-            </View>
-
-            <View style={{ gap: 12, marginTop: 8 }}>
-              {/* Choice 1: อัดเสียงใหม่ด้วยไมค์ */}
-              <Pressable
-                style={({ pressed }) => [styles.addChoiceCard, pressed && styles.btnPressed]}
-                onPress={() => {
-                  setShowAddSoundModal(false);
-                  setShowRecordModal(true);
-                }}
-              >
-                <View style={[styles.addChoiceIconWrap, { backgroundColor: "#FEE2E2" }]}>
-                  <Ionicons name="mic" size={24} color="#DC2626" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.addChoiceTitle}>🎙️ อัดเสียงใหม่ด้วยไมโครโฟน</Text>
-                  <Text style={styles.addChoiceSub}>
-                    อัดเสียงพูดของคุณ เช่น "ตรวจจุดสำเร็จ" หรือเสียงสัญญาณ
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-              </Pressable>
-
-              {/* Choice 2: เลือกไฟล์เสียงจากเครื่อง / โฟลเดอร์ดาวน์โหลด */}
-              <Pressable
-                style={({ pressed }) => [styles.addChoiceCard, pressed && styles.btnPressed]}
-                onPress={handlePickAudioFile}
-              >
-                <View style={[styles.addChoiceIconWrap, { backgroundColor: "#EAF2FF" }]}>
-                  <Ionicons name="folder-open" size={24} color="#0C4A94" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.addChoiceTitle}>📁 เลือกจากโฟลเดอร์ไฟล์ / ดาวน์โหลด</Text>
-                  <Text style={styles.addChoiceSub}>
-                    เลือกไฟล์เสียง MP3, WAV, M4A, AAC จากในเครื่อง
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-              </Pressable>
-
-              {/* Choice 3: เลือกจากคลังแกลเลอรี / สื่อในเครื่อง */}
-              <Pressable
-                style={({ pressed }) => [styles.addChoiceCard, pressed && styles.btnPressed]}
-                onPress={handlePickFromGallery}
-              >
-                <View style={[styles.addChoiceIconWrap, { backgroundColor: "#E0F2FE" }]}>
-                  <Ionicons name="images" size={24} color="#0284C7" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.addChoiceTitle}>🖼️ เลือกจากคลังแกลเลอรี / สื่อในเครื่อง</Text>
-                  <Text style={styles.addChoiceSub}>
-                    เปิดแกลเลอรีรูปภาพ/วิดีโอเพื่อดึงเสียง
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal 3: สตูดิโออัดเสียงแจ้งเตือน (Voice Recording Studio) */}
+      {/* Modal 2: สตูดิโออัดเสียงแจ้งเตือน (Voice Recording Studio) */}
       <Modal visible={showRecordModal} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
