@@ -120,14 +120,33 @@ export default function AppSettingsScreen() {
   const handlePickAudioFile = async () => {
     try {
       setShowAddSoundModal(false);
-      const res = await DocumentPicker.getDocumentAsync({
-        type: "audio/*",
-        copyToCacheDirectory: true
-      });
+      let res;
+      try {
+        res = await DocumentPicker.getDocumentAsync({
+          type: [
+            "audio/*",
+            "public.audio",
+            "audio/mpeg",
+            "audio/mp3",
+            "audio/wav",
+            "audio/m4a",
+            "audio/x-m4a",
+            "audio/aac",
+            "audio/x-wav"
+          ],
+          copyToCacheDirectory: true
+        });
+      } catch {
+        // Fallback for devices that only accept universal wildcard
+        res = await DocumentPicker.getDocumentAsync({
+          type: "*/*",
+          copyToCacheDirectory: true
+        });
+      }
 
-      if (!res.canceled && res.assets && res.assets.length > 0) {
+      if (res && !res.canceled && res.assets && res.assets.length > 0) {
         const file = res.assets[0];
-        const defaultName = file.name.replace(/\.[^/.]+$/, "") || "เสียงไฟล์กำหนดเอง";
+        const defaultName = file.name ? file.name.replace(/\.[^/.]+$/, "") : "เสียงไฟล์กำหนดเอง";
         const newSound = soundHelper.addCustomSound(defaultName, file.uri);
         setSelectedSoundId(newSound.id);
         setSelectedSoundName(newSound.name);
@@ -143,7 +162,8 @@ export default function AppSettingsScreen() {
         );
       }
     } catch (err) {
-      Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถเปิดไฟล์เสียงได้");
+      console.log("Error picking audio file:", err);
+      Alert.alert("ไม่สามารถเปิดไฟล์เสียงได้", "โปรดลองเลือกไฟล์เสียงในรูปแบบ .mp3, .m4a หรือ .wav ใหม่อีกครั้ง");
     }
   };
 
