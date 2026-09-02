@@ -162,8 +162,6 @@ export const soundHelper = {
 
   async playSound(soundIdOrUri: string, overrideVol?: number) {
     try {
-      Vibration.vibrate(80);
-
       // Force Audio Mode to use Main Loudspeaker at Full Volume
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,

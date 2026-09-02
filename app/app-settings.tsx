@@ -319,31 +319,6 @@ export default function AppSettingsScreen() {
                 <Ionicons name="chevron-forward" size={16} color="#0C4A94" />
               </View>
             </Pressable>
-
-            <View style={styles.divider} />
-
-            {/* ระบบสั่น */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="phone-portrait-outline" size={22} color="#0C4A94" />
-                <View>
-                  <Text style={styles.settingLabel}>ระบบสั่น (Haptic Vibration)</Text>
-                  <Text style={styles.settingSub}>สั่นตอบสนองเมื่อกดบันทึกหรือแจ้งเหตุ</Text>
-                </View>
-              </View>
-              <Switch
-                value={vibrationEnabled}
-                onValueChange={(val) => {
-                  setVibrationEnabled(val);
-                  cpStore.updateSettings({ vibrationEnabled: val });
-                  if (val) {
-                    Vibration.vibrate(80);
-                  }
-                }}
-                trackColor={{ false: "#CBD5E1", true: "#0C4A94" }}
-                thumbColor="white"
-              />
-            </View>
           </View>
         </View>
 
