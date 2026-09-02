@@ -55,14 +55,14 @@ export const DEFAULT_SOUNDS: SoundOption[] = [
   }
 ];
 
-const STORAGE_CUSTOM_SOUNDS_KEY = "checkpoint_custom_sounds_v1";
-const STORAGE_VOLUME_KEY = "checkpoint_app_volume_v1";
+const STORAGE_CUSTOM_SOUNDS_PREFIX = "checkpoint_custom_sounds_guard_";
+const STORAGE_VOLUME_PREFIX = "checkpoint_app_volume_guard_";
 
+let currentGuardId: string = "default";
 let customSoundsList: SoundOption[] = [...DEFAULT_SOUNDS];
 let currentSoundObject: Audio.Sound | null = null;
 let currentRecording: Audio.Recording | null = null;
 let appVolume: number = 1.0;
-let isInitialized = false;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -70,45 +70,61 @@ function notify() {
   listeners.forEach((l) => l());
 }
 
-// Load saved custom sounds & volume from local storage on app startup
-async function loadPersistedSounds() {
-  if (isInitialized) return;
+async function loadPersistedSoundsForGuard(guardId: string) {
+  currentGuardId = guardId || "default";
   try {
-    const savedSoundsJson = await AsyncStorage.getItem(STORAGE_CUSTOM_SOUNDS_KEY);
+    const key = `${STORAGE_CUSTOM_SOUNDS_PREFIX}${currentGuardId}`;
+    const volKey = `${STORAGE_VOLUME_PREFIX}${currentGuardId}`;
+
+    const savedSoundsJson = await AsyncStorage.getItem(key);
     if (savedSoundsJson) {
       const parsed: SoundOption[] = JSON.parse(savedSoundsJson);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         customSoundsList = [...parsed, ...DEFAULT_SOUNDS];
+      } else {
+        customSoundsList = [...DEFAULT_SOUNDS];
       }
+    } else {
+      customSoundsList = [...DEFAULT_SOUNDS];
     }
-    const savedVol = await AsyncStorage.getItem(STORAGE_VOLUME_KEY);
+
+    const savedVol = await AsyncStorage.getItem(volKey);
     if (savedVol) {
       const volNum = parseFloat(savedVol);
       if (!isNaN(volNum)) {
         appVolume = volNum;
       }
+    } else {
+      appVolume = 1.0;
     }
   } catch (err) {
-    console.log("Error loading custom sounds from storage:", err);
+    console.log("Error loading custom sounds for guard:", err);
+    customSoundsList = [...DEFAULT_SOUNDS];
   } finally {
-    isInitialized = true;
     notify();
   }
 }
 
-// Automatically initiate load
-loadPersistedSounds();
-
-async function saveCustomSounds() {
+async function saveCustomSoundsForGuard() {
   try {
+    const key = `${STORAGE_CUSTOM_SOUNDS_PREFIX}${currentGuardId || "default"}`;
     const onlyCustom = customSoundsList.filter((s) => s.isCustom);
-    await AsyncStorage.setItem(STORAGE_CUSTOM_SOUNDS_KEY, JSON.stringify(onlyCustom));
+    await AsyncStorage.setItem(key, JSON.stringify(onlyCustom));
   } catch (err) {
-    console.log("Error saving custom sounds to storage:", err);
+    console.log("Error saving custom sounds for guard:", err);
   }
 }
 
+// Initial load
+loadPersistedSoundsForGuard("default");
+
 export const soundHelper = {
+  async loadSoundsForGuard(guardId: string) {
+    if (guardId !== currentGuardId) {
+      await loadPersistedSoundsForGuard(guardId);
+    }
+  },
+
   getSounds(): SoundOption[] {
     return customSoundsList && customSoundsList.length > 0 ? customSoundsList : [...DEFAULT_SOUNDS];
   },
@@ -119,27 +135,28 @@ export const soundHelper = {
 
   setVolume(vol: number) {
     appVolume = Math.max(0.1, Math.min(1.0, vol));
-    AsyncStorage.setItem(STORAGE_VOLUME_KEY, appVolume.toString()).catch(() => {});
+    const volKey = `${STORAGE_VOLUME_PREFIX}${currentGuardId || "default"}`;
+    AsyncStorage.setItem(volKey, appVolume.toString()).catch(() => {});
     notify();
   },
 
   addCustomSound(name: string, uri: string): SoundOption {
     const newSound: SoundOption = {
-      id: `custom_${Date.now()}`,
-      name: name || `เสียงกำหนดเอง ${customSoundsList.length + 1}`,
+      id: `custom_${currentGuardId}_${Date.now()}`,
+      name: name || `เสียงกำหนดเอง ${customSoundsList.filter(s => s.isCustom).length + 1}`,
       uri: uri,
       icon: "musical-notes",
       isCustom: true
     };
     customSoundsList = [newSound, ...customSoundsList];
-    saveCustomSounds();
+    saveCustomSoundsForGuard();
     notify();
     return newSound;
   },
 
   removeCustomSound(id: string) {
     customSoundsList = customSoundsList.filter((s) => s.id !== id);
-    saveCustomSounds();
+    saveCustomSoundsForGuard();
     notify();
   },
 

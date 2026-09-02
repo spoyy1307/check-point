@@ -18,6 +18,7 @@ import { COLORS } from "../constants/colors";
 import TopBar from "../components/TopBar";
 import { SoundOption, DEFAULT_SOUNDS, soundHelper } from "../lib/soundHelper";
 import { useCheckpointMobileStore } from "../lib/checkpointMobileStore";
+import { useUserStore } from "../lib/userStore";
 import { patrolReminderEngine } from "../lib/patrolReminderEngine";
 
 export const REMINDER_OPTIONS = [
@@ -84,6 +85,14 @@ export default function AppSettingsScreen() {
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const [recordDuration, setRecordDuration] = useState(0);
   const [customSoundName, setCustomSoundName] = useState("");
+  const userStore = useUserStore();
+  const profile = userStore.getProfile();
+
+  useEffect(() => {
+    if (profile?.employeeId) {
+      soundHelper.loadSoundsForGuard(profile.employeeId);
+    }
+  }, [profile?.employeeId]);
 
   useEffect(() => {
     return soundHelper.subscribe(() => {
