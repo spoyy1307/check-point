@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckpointItem, CheckpointStatus, PATROL_ROUNDS, PatrolRound } from "../types/patrol";
-import { api } from "./api";
+import { api, apiClient } from "./api";
 
 // In-memory state for active session
 let roundsData: PatrolRound[] = JSON.parse(JSON.stringify(PATROL_ROUNDS));
@@ -19,6 +19,48 @@ export const patrolStore = {
 
   getRound(roundId: number): PatrolRound | undefined {
     return roundsData.find((r) => r.id === roundId);
+  },
+
+  async fetchCheckpointsForFactory(factoryId?: string): Promise<PatrolRound[]> {
+    try {
+      const res = await apiClient.get<any>("/checkpoints");
+      const rawList = Array.isArray(res?.data)
+        ? res.data
+        : (Array.isArray(res) ? res : (Array.isArray(res?.data?.data) ? res.data.data : []));
+
+      if (rawList && rawList.length > 0) {
+        const points: CheckpointItem[] = rawList.map((cp: any, idx: number) => ({
+          id: Number(cp.id) || idx + 1,
+          name: cp.name || `จุดตรวจที่ ${idx + 1}`,
+          scheduledTime: cp.target_time_desc || cp.targetTimeDesc || "ตามรอบเวลา",
+          currentTime: "ตรงเวลา",
+          status: "pending",
+          photos: [],
+          latitude: Number(cp.latitude) || 14.9033,
+          longitude: Number(cp.longitude) || 102.0562,
+          radiusMeters: Number(cp.radius_meters || cp.radiusMeters) || 50
+        }));
+
+        const singleRound: PatrolRound = {
+          id: 1,
+          title: "รอบที่ 1 (ประจำกะปฏิบัติการ)",
+          time: "08:00 - 20:00 น.",
+          startTime: "08:00",
+          endTime: "20:00",
+          points: points.length,
+          completed: 0,
+          status: "pending",
+          checkpoints: points
+        };
+
+        roundsData = [singleRound];
+        notifyListeners();
+        return roundsData;
+      }
+    } catch (e) {
+      console.log("Could not fetch real checkpoints from backend:", e);
+    }
+    return roundsData;
   },
 
   completeCheckpoint(

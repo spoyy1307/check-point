@@ -31,6 +31,10 @@ export default function PatrolTabScreen() {
   const guardZone = profile.zone || guard.assignedZone;
   const rounds = patrolStore.getRounds();
 
+  React.useEffect(() => {
+    patrolStore.fetchCheckpointsForFactory(factory.id).catch(() => {});
+  }, [factory.id]);
+
   const handleRoundPress = (roundId: number, isComplete: boolean) => {
     if (isComplete) {
       router.push({ pathname: "/round-summary", params: { round: roundId.toString() } });

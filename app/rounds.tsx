@@ -21,6 +21,10 @@ export default function RoundsScreen() {
   const patrolStore = usePatrolStore();
   const rounds = patrolStore.getRounds();
 
+  React.useEffect(() => {
+    patrolStore.fetchCheckpointsForFactory().catch(() => {});
+  }, []);
+
   const handleRoundPress = (roundId: number, isComplete: boolean) => {
     if (isComplete) {
       router.push({ pathname: "/round-summary", params: { round: roundId.toString() } });
