@@ -32,7 +32,15 @@ export const apiClient = {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    const url = `${API_CONFIG.baseUrl.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
+    const rawBase = (API_CONFIG.baseUrl || "http://localhost:3001").replace(/\/$/, "");
+    const cleanEndpoint = endpoint.replace(/^\//, "");
+    
+    let url: string;
+    if (rawBase.endsWith("/api") || rawBase.includes("/api/")) {
+      url = `${rawBase}/${cleanEndpoint}`;
+    } else {
+      url = `${rawBase}/api/${cleanEndpoint}`;
+    }
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",

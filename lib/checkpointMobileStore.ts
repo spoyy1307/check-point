@@ -9,9 +9,11 @@ import {
   SmartVisitorGuardAccount
 } from "../types/checkpointMobile";
 import { PATROL_ROUNDS } from "../types/patrol";
-import { api } from "./api";
+import { api, apiClient } from "./api";
 
 // Initial root state conforming to "check-point-mobile" schema
+let activeFactoriesList: SmartVisitorFactory[] = [...SMART_VISITOR_FACTORIES];
+
 let checkpointMobileState: CheckPointMobileData["check-point-mobile"] = {
   version: "1.0.0",
   factory: { ...SMART_VISITOR_FACTORIES[0] },
@@ -85,11 +87,42 @@ export const checkpointMobileStore = {
   },
 
   getAllFactories(): SmartVisitorFactory[] {
-    return SMART_VISITOR_FACTORIES;
+    return activeFactoriesList;
+  },
+
+  async fetchRealFactories(): Promise<SmartVisitorFactory[]> {
+    try {
+      const res = await apiClient.get("/factories/public");
+      if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+        const mapped: SmartVisitorFactory[] = res.data.map((f: any) => ({
+          id: String(f.id),
+          code: f.code || `FAC-${f.id}`,
+          name: f.name,
+          branchName: f.provinceNameTh || f.address || "โรงงานสาขา",
+          address: f.address || "",
+          latitude: Number(f.latitude) || 14.9033,
+          longitude: Number(f.longitude) || 102.0562,
+          zones: ["ทุกโซนพื้นที่ส่วนกลาง", "อาคารฝ่ายผลิต", "ลานจอดรถ"],
+          totalCheckpoints: 8
+        }));
+
+        activeFactoriesList = mapped;
+
+        // Auto select first factory if current is default mockup
+        if (!activeFactoriesList.some((f) => f.id === checkpointMobileState.factory.id)) {
+          checkpointMobileState.factory = { ...mapped[0] };
+        }
+        notify();
+        return mapped;
+      }
+    } catch (err) {
+      console.log("Cannot load real factories from backend, using fallback:", err);
+    }
+    return activeFactoriesList;
   },
 
   setFactory(factoryId: string) {
-    const found = SMART_VISITOR_FACTORIES.find((f) => f.id === factoryId);
+    const found = activeFactoriesList.find((f) => f.id === factoryId);
     if (found) {
       checkpointMobileState = {
         ...checkpointMobileState,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -17,7 +17,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../constants/colors";
 import { useUserStore } from "../lib/userStore";
 import { useCheckpointMobileStore } from "../lib/checkpointMobileStore";
-import { SMART_VISITOR_FACTORIES } from "../types/checkpointMobile";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -25,8 +24,18 @@ export default function LoginScreen() {
   const cpStore = useCheckpointMobileStore();
   const currentFactory = cpStore.getFactory();
 
+  const [allFactories, setAllFactories] = useState(cpStore.getAllFactories());
   const [selectedFactoryId, setSelectedFactoryId] = useState(currentFactory.id);
   const [showFactoryModal, setShowFactoryModal] = useState(false);
+
+  useEffect(() => {
+    cpStore.fetchRealFactories().then((factories) => {
+      if (factories && factories.length > 0) {
+        setAllFactories(factories);
+        setSelectedFactoryId(factories[0].id);
+      }
+    });
+  }, []);
 
   const [employeeId, setEmployeeId] = useState("00123");
   const [password, setPassword] = useState("123456");
@@ -35,7 +44,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const activeFactory =
-    SMART_VISITOR_FACTORIES.find((f) => f.id === selectedFactoryId) || currentFactory;
+    allFactories.find((f) => f.id === selectedFactoryId) || currentFactory;
 
   const handleLogin = () => {
     if (!employeeId.trim() || !password.trim()) {
@@ -221,7 +230,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.factoryList}>
-              {SMART_VISITOR_FACTORIES.map((f) => {
+              {allFactories.map((f) => {
                 const isSelected = f.id === selectedFactoryId;
                 return (
                   <Pressable
