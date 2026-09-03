@@ -56,13 +56,10 @@ export default function GuardSelectionScreen() {
       setEnteredPin(nextPin);
       setPinError(null);
 
-      const targetPin = selectedGuard?.pin || "123456";
-      const requiredLength = targetPin.length === 4 ? 4 : 6;
-
-      if (nextPin.length === requiredLength && selectedGuard) {
+      if (nextPin.length === 6 && selectedGuard) {
         const cleanAccount = selectedGuard.username?.replace("@", "") || selectedGuard.employeeId;
 
-        // Verify PIN with server
+        // Strict Real-time PIN Verification with PostgreSQL Database
         apiClient
           .post("/auth/login-pin", {
             accountName: cleanAccount,
@@ -77,34 +74,19 @@ export default function GuardSelectionScreen() {
               setEnteredPin("");
               router.replace("/(tabs)");
             } else {
-              // Fallback for local testing / default PIN
-              if (nextPin === targetPin || nextPin === "123456" || nextPin === "000000") {
-                userStore.setProfileFromGuard(selectedGuard);
-                cpStore.switchGuardAccount(selectedGuard);
-                setSelectedGuard(null);
-                setEnteredPin("");
-                router.replace("/(tabs)");
-              } else {
-                setPinError(res?.message || "รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
-                setTimeout(() => {
-                  setEnteredPin("");
-                }, 800);
-              }
-            }
-          })
-          .catch(() => {
-            if (nextPin === targetPin || nextPin === "123456") {
-              userStore.setProfileFromGuard(selectedGuard);
-              cpStore.switchGuardAccount(selectedGuard);
-              setSelectedGuard(null);
-              setEnteredPin("");
-              router.replace("/(tabs)");
-            } else {
-              setPinError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+              setPinError(
+                res?.message || (res?.data as any)?.error || "รหัส PIN ไม่ถูกต้อง (ตรวจสอบจากฐานข้อมูลจริง)"
+              );
               setTimeout(() => {
                 setEnteredPin("");
               }, 800);
             }
+          })
+          .catch((err) => {
+            setPinError(err?.message || "รหัส PIN ไม่ถูกต้อง (ตรวจสอบจากฐานข้อมูลจริง)");
+            setTimeout(() => {
+              setEnteredPin("");
+            }, 800);
           });
       }
     }
