@@ -124,26 +124,22 @@ export const PATROL_ROUNDS: PatrolRound[] = [
     title: "รอบที่ 1",
     time: "20:00 - 22:00 น.",
     startTime: "20:00 น.",
-    endTime: "22:01 น.",
+    endTime: "22:00 น.",
     points: 8,
     completed: 0,
     status: "active",
-    checkpoints: DEFAULT_CHECKPOINTS_ROUND_1
+    checkpoints: DEFAULT_CHECKPOINTS_ROUND_1.map((p) => ({ ...p, status: "pending", photos: [] }))
   },
   {
     id: 2,
     title: "รอบที่ 2",
     time: "22:00 - 00:00 น.",
     startTime: "22:00 น.",
-    endTime: "00:05 น.",
+    endTime: "00:00 น.",
     points: 8,
-    completed: 7,
-    status: "late",
-    checkpoints: DEFAULT_CHECKPOINTS_ROUND_1.map((p, idx) => ({
-      ...p,
-      status: idx < 7 ? (idx === 3 ? "late" : "on_time") : "pending",
-      photos: idx < 7 ? ["https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80"] : []
-    }))
+    completed: 0,
+    status: "pending",
+    checkpoints: DEFAULT_CHECKPOINTS_ROUND_1.map((p) => ({ ...p, status: "pending", photos: [] }))
   },
   {
     id: 3,
@@ -152,13 +148,9 @@ export const PATROL_ROUNDS: PatrolRound[] = [
     startTime: "00:00 น.",
     endTime: "02:00 น.",
     points: 8,
-    completed: 8,
-    status: "complete",
-    checkpoints: DEFAULT_CHECKPOINTS_ROUND_1.map((p) => ({
-      ...p,
-      status: "on_time",
-      photos: ["https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80"]
-    }))
+    completed: 0,
+    status: "pending",
+    checkpoints: DEFAULT_CHECKPOINTS_ROUND_1.map((p) => ({ ...p, status: "pending", photos: [] }))
   },
   {
     id: 4,
@@ -167,13 +159,9 @@ export const PATROL_ROUNDS: PatrolRound[] = [
     startTime: "02:00 น.",
     endTime: "04:00 น.",
     points: 8,
-    completed: 5,
-    status: "late",
-    checkpoints: DEFAULT_CHECKPOINTS_ROUND_1.map((p, idx) => ({
-      ...p,
-      status: idx < 5 ? (idx === 1 ? "late" : "on_time") : "pending",
-      photos: idx < 5 ? ["https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80"] : []
-    }))
+    completed: 0,
+    status: "pending",
+    checkpoints: DEFAULT_CHECKPOINTS_ROUND_1.map((p) => ({ ...p, status: "pending", photos: [] }))
   }
 ];
 

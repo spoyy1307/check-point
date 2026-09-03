@@ -9,6 +9,7 @@ import { COLORS } from "../../constants/colors";
 import { RoundStatus } from "../../types/patrol";
 import { usePatrolStore } from "../../lib/patrolStore";
 import { useCheckpointMobileStore } from "../../lib/checkpointMobileStore";
+import { useUserStore } from "../../lib/userStore";
 
 const statusText: Record<RoundStatus, string> = {
   pending: "ยังไม่ได้ตรวจ",
@@ -21,8 +22,13 @@ export default function PatrolTabScreen() {
   const insets = useSafeAreaInsets();
   const patrolStore = usePatrolStore();
   const cpStore = useCheckpointMobileStore();
+  const userStore = useUserStore();
+  const profile = userStore.getProfile();
   const factory = cpStore.getFactory();
   const guard = cpStore.getGuardAccount();
+  const guardName = profile.name || guard.name;
+  const guardRole = profile.role || guard.role;
+  const guardZone = profile.zone || guard.assignedZone;
   const rounds = patrolStore.getRounds();
 
   const handleRoundPress = (roundId: number, isComplete: boolean) => {
@@ -52,7 +58,7 @@ export default function PatrolTabScreen() {
               {factory.name}
             </Text>
             <Text style={styles.factoryBannerSub}>
-              ผู้ตรวจ: {guard.name} ({guard.employeeId}) • โซน: {guard.assignedZone}
+              ผู้ตรวจ: {guardName} ({guardRole}) • โซน: {guardZone}
             </Text>
           </View>
         </View>

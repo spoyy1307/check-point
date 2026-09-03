@@ -2,91 +2,9 @@ import { useEffect, useState } from "react";
 import { NotificationItem } from "../types/notification";
 import { systemNotificationHelper } from "./systemNotificationHelper";
 
-export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "NOTIF-EMG-001",
-    title: "🚨 แจ้งเหตุด่วนจากสายตรวจอื่น: ไฟไหม้/กลุ่มควัน",
-    category: "emergency",
-    priority: "urgent",
-    summary: "รปภ. สมศักดิ์ (ป้อมหน้า) แจ้งพบกลุ่มควันหนาแน่น บริเวณลานจัดเก็บสินค้าหลังโรงงาน",
-    content: "พบกลุ่มควันลอยขึ้นจากมุมด้านหลังคลังสินค้า โซน B เจ้าหน้าที่สายตรวจป้อมหน้ากำลังเข้าพื้นที่เพื่อตรวจสอบเบื้องต้น ขอให้ รปภ. ในพื้นที่ใกล้เคียงเตรียมพร้อมเข้าสนับสนุนและประสานงานทีมดับเพลิงประจำโรงงาน",
-    timestamp: "17:15 น.",
-    date: "26 ส.ค. 2569",
-    isRead: false,
-    incidentData: {
-      incidentType: "ไฟไหม้ / กลุ่มควัน",
-      reporterName: "สมศักดิ์ ปลอดภัย",
-      reporterId: "00124",
-      reporterPhone: "089-555-1122",
-      locationName: "ลานจัดเก็บสินค้า โซน B (หลังโรงงาน)",
-      latitude: 14.9038,
-      longitude: 102.0575,
-      distanceMeters: 120,
-      photos: [
-        "https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80"
-      ],
-      status: "ongoing"
-    }
-  },
-  {
-    id: "NOTIF-ANN-001",
-    title: "📢 คำสั่งพิเศษจากแอดมิน: ตรวจเข้มงวดยานพาหนะเข้า-ออก",
-    category: "announcement",
-    priority: "urgent",
-    summary: "กำชับเจ้าหน้าที่ รปภ. ทุกผลัด ตรวจค้นท้ายรถและบันทึกภาพทะเบียนรถบรรทุกทุกคันอย่างเคร่งครัด",
-    content: "ตามนโยบายยกระดับความปลอดภัยประจำไตรมาส ขอให้เจ้าหน้าที่ รปภ. ประจำจุดคัดกรองและป้อมหน้า ทำการตรวจสอบบัตรประชาชนผู้ขับขี่ บันทึกภาพถ่ายป้ายทะเบียน และตรวจใบนำสินค้าออกทุกครั้งก่อนเปิดไม้กั้น หากพบสิ่งผิดปกติให้แจ้งศูนย์ควบคุม (SOC) ทันที",
-    timestamp: "14:30 น.",
-    date: "26 ส.ค. 2569",
-    isRead: false,
-    announcementData: {
-      publisherName: "ฝ่ายดูแลระบบ Check Point (SOC Admin)",
-      publisherRole: "ผู้จัดการฝ่ายรักษาความปลอดภัย",
-      importance: "high",
-      bannerImage: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80",
-      acknowledgedByGuard: false,
-      validUntil: "31 ส.ค. 2569"
-    }
-  },
-  {
-    id: "NOTIF-PAT-001",
-    title: "⏰ แจ้งเตือนรอบตรวจ: ใกล้ถึงเวลาตรวจรอบที่ 2",
-    category: "patrol",
-    priority: "normal",
-    summary: "รอบตรวจที่ 2 (22:00 - 00:00 น.) จะเริ่มในอีก 15 นาที มีทั้งหมด 8 จุดตรวจ",
-    content: "กรุณาเตรียมความพร้อมของอุปกรณ์มือถือ และเริ่มออกตรวจตามเส้นทางที่กำหนดเพื่อความปลอดภัยของพื้นที่โรงงาน",
-    timestamp: "21:45 น.",
-    date: "26 ส.ค. 2569",
-    isRead: false,
-    patrolData: {
-      roundId: 2,
-      roundName: "รอบที่ 2 (22:00 - 00:00 น.)",
-      scheduledTime: "22:00 น.",
-      totalPoints: 8
-    }
-  },
-  {
-    id: "NOTIF-ANN-002",
-    title: "📢 ประกาศทั่วไป: กำหนดการซ้อมแผนอพยพหนีไฟประจำปี",
-    category: "announcement",
-    priority: "normal",
-    summary: "โรงงานจะทำการซ้อมแผนดับเพลิงและอพยพหนีไฟในวันศุกร์ที่ 28 ส.ค. เวลา 13:30 - 15:00 น.",
-    content: "ขอให้เจ้าหน้าที่ รปภ. ทุกท่าน ศึกษารายละเอียดจุดรวมพลและเส้นทางอพยพหลักของโรงงาน พร้อมอำนวยความสะดวกให้แก่พนักงานและเจ้าหน้าที่ดับเพลิงเทศบาลที่จะมาร่วมฝึกซ้อม",
-    timestamp: "09:00 น.",
-    date: "25 ส.ค. 2569",
-    isRead: true,
-    announcementData: {
-      publisherName: "ฝ่ายความปลอดภัยและสิ่งแวดล้อม (EHS)",
-      publisherRole: "เจ้าหน้าที่ความปลอดภัยวิชาชีพ",
-      importance: "normal",
-      bannerImage: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&auto=format&fit=crop&q=80",
-      acknowledgedByGuard: true,
-      validUntil: "28 ส.ค. 2569"
-    }
-  }
-];
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
 
-let notifications: NotificationItem[] = JSON.parse(JSON.stringify(INITIAL_NOTIFICATIONS));
+let notifications: NotificationItem[] = [];
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
