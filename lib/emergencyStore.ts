@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { checkpointMobileStore } from "./checkpointMobileStore";
+import { userStore } from "./userStore";
+import { notificationStore } from "./notificationStore";
 
 export type EmergencyIncident = {
   id: string;
@@ -10,6 +13,8 @@ export type EmergencyIncident = {
   photos: string[];
   reporterName: string;
   reporterId: string;
+  factoryId: string;
+  factoryName?: string;
   latitude: number;
   longitude: number;
   status: "transmitted" | "received" | "resolved";
@@ -27,11 +32,14 @@ function notifyListeners() {
 
 export const emergencyStore = {
   getLatestIncident(): EmergencyIncident | null {
-    return latestIncident;
+    const currentFactoryId = checkpointMobileStore.getFactory().id;
+    if (latestIncident && latestIncident.factoryId === currentFactoryId) return latestIncident;
+    return incidentsHistory.find((inc) => inc.factoryId === currentFactoryId) || null;
   },
 
   getAllIncidents(): EmergencyIncident[] {
-    return incidentsHistory;
+    const currentFactoryId = checkpointMobileStore.getFactory().id;
+    return incidentsHistory.filter((inc) => inc.factoryId === currentFactoryId);
   },
 
   getIncidentById(id: string): EmergencyIncident | undefined {
@@ -45,6 +53,7 @@ export const emergencyStore = {
     photos: string[];
     reporterName?: string;
     reporterId?: string;
+    factoryId?: string;
     latitude?: number;
     longitude?: number;
   }): EmergencyIncident {
@@ -53,7 +62,10 @@ export const emergencyStore = {
       .getMinutes()
       .toString()
       .padStart(2, "0")} น.`;
-    const dateStr = `${now.getDate()} พ.ค. ${now.getFullYear() + 543}`;
+    const dateStr = `${now.getDate()} ส.ค. ${now.getFullYear() + 543}`;
+
+    const currentFactory = checkpointMobileStore.getFactory();
+    const currentProfile = userStore.getProfile();
 
     const newIncident: EmergencyIncident = {
       id: `EMG-${Date.now()}`,
@@ -62,10 +74,12 @@ export const emergencyStore = {
       time: timeStr,
       date: dateStr,
       photos: data.photos || [],
-      reporterName: data.reporterName || "พงษ์พล อุทกานต์ภัทรกุล",
-      reporterId: data.reporterId || "00123",
-      latitude: data.latitude || 16.8156,
-      longitude: data.longitude || 100.262,
+      reporterName: data.reporterName || currentProfile.name || "เจ้าหน้าที่ รปภ.",
+      reporterId: data.reporterId || currentProfile.employeeId || "0",
+      factoryId: data.factoryId || currentFactory.id,
+      factoryName: currentFactory.name,
+      latitude: data.latitude || currentFactory.latitude || 16.8156,
+      longitude: data.longitude || currentFactory.longitude || 100.262,
       status: "transmitted"
     };
 
@@ -73,7 +87,34 @@ export const emergencyStore = {
     incidentsHistory.unshift(newIncident);
     notifyListeners();
 
-    // Send to Backend API (POST /incidents)
+    // Trigger high-priority in-app banner alert for guards in this factory
+    notificationStore.addNotification(
+      {
+        id: `NOTIF-EMG-${Date.now()}`,
+        title: `🚨 แจ้งเหตุฉุกเฉิน: ${newIncident.type}`,
+        category: "emergency",
+        priority: "urgent",
+        summary: `แจ้งโดย: ${newIncident.reporterName} (${newIncident.factoryName})`,
+        content: newIncident.detail || "เกิดเหตุฉุกเฉินในพื้นที่ กรุณาตรวจสอบทันที",
+        timestamp: timeStr,
+        date: dateStr,
+        isRead: false,
+        incidentData: {
+          incidentType: newIncident.type,
+          reporterName: newIncident.reporterName,
+          reporterId: newIncident.reporterId,
+          reporterPhone: currentProfile.phone || "081-000-0000",
+          locationName: newIncident.factoryName || "พื้นที่โรงงาน",
+          latitude: newIncident.latitude,
+          longitude: newIncident.longitude,
+          photos: newIncident.photos,
+          status: "ongoing"
+        }
+      },
+      true
+    );
+
+    // Send to Backend API (POST /incidents) with factoryId and real reporter info
     api.emergency
       .createIncident({
         type: newIncident.type,
