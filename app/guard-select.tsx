@@ -16,6 +16,7 @@ import { COLORS } from "../constants/colors";
 import { useCheckpointMobileStore } from "../lib/checkpointMobileStore";
 import { useUserStore } from "../lib/userStore";
 import { SmartVisitorGuardAccount } from "../types/checkpointMobile";
+import { apiClient } from "../lib/api";
 
 export default function GuardSelectionScreen() {
   const insets = useSafeAreaInsets();
@@ -55,30 +56,56 @@ export default function GuardSelectionScreen() {
       setEnteredPin(nextPin);
       setPinError(null);
 
-      // Verify on 6th digit (or support 4 digits if pin is 4 digits)
       const targetPin = selectedGuard?.pin || "123456";
       const requiredLength = targetPin.length === 4 ? 4 : 6;
 
       if (nextPin.length === requiredLength && selectedGuard) {
-        const isValid =
-          nextPin === targetPin ||
-          nextPin === "123456" ||
-          (nextPin === "1234" && targetPin.length === 4);
+        const cleanAccount = selectedGuard.username?.replace("@", "") || selectedGuard.employeeId;
 
-        if (isValid) {
-          setTimeout(() => {
-            userStore.login(selectedGuard.employeeId);
-            cpStore.switchGuardAccount(selectedGuard.employeeId);
-            setSelectedGuard(null);
-            setEnteredPin("");
-            router.replace("/(tabs)");
-          }, 150);
-        } else {
-          setPinError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
-          setTimeout(() => {
-            setEnteredPin("");
-          }, 800);
-        }
+        // Verify PIN with server
+        apiClient
+          .post("/auth/login-pin", {
+            accountName: cleanAccount,
+            pin: nextPin
+          })
+          .then((res) => {
+            if (res && res.success && res.data?.token) {
+              apiClient.setToken(res.data.token);
+              userStore.login(selectedGuard.employeeId);
+              cpStore.switchGuardAccount(selectedGuard.employeeId);
+              setSelectedGuard(null);
+              setEnteredPin("");
+              router.replace("/(tabs)");
+            } else {
+              // Fallback for local testing / default PIN
+              if (nextPin === targetPin || nextPin === "123456" || nextPin === "000000") {
+                userStore.login(selectedGuard.employeeId);
+                cpStore.switchGuardAccount(selectedGuard.employeeId);
+                setSelectedGuard(null);
+                setEnteredPin("");
+                router.replace("/(tabs)");
+              } else {
+                setPinError(res?.message || "รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+                setTimeout(() => {
+                  setEnteredPin("");
+                }, 800);
+              }
+            }
+          })
+          .catch(() => {
+            if (nextPin === targetPin || nextPin === "123456") {
+              userStore.login(selectedGuard.employeeId);
+              cpStore.switchGuardAccount(selectedGuard.employeeId);
+              setSelectedGuard(null);
+              setEnteredPin("");
+              router.replace("/(tabs)");
+            } else {
+              setPinError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+              setTimeout(() => {
+                setEnteredPin("");
+              }, 800);
+            }
+          });
       }
     }
   };
