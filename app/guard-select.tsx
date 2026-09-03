@@ -230,7 +230,11 @@ export default function GuardSelectionScreen() {
             {selectedGuard && (
               <View style={styles.guardBanner}>
                 <View style={styles.bannerAvatarWrap}>
-                  <Text style={{ fontSize: 26 }}>{selectedGuard.avatarEmoji || "👮"}</Text>
+                  {selectedGuard.avatarUri ? (
+                    <Image source={{ uri: selectedGuard.avatarUri }} style={styles.avatarImg} />
+                  ) : (
+                    <Text style={{ fontSize: 26 }}>{selectedGuard.avatarEmoji || "👮"}</Text>
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.bannerName}>{selectedGuard.name}</Text>
@@ -266,7 +270,7 @@ export default function GuardSelectionScreen() {
             {pinError ? (
               <Text style={styles.pinErrorText}>{pinError}</Text>
             ) : (
-              <Text style={styles.pinHintText}>* กำหนดโดยผู้ดูแลระบบ (รหัสเริ่มต้น: 123456)</Text>
+              <Text style={styles.pinHintText}>* รหัสผ่าน PIN 6 หลักที่บันทึกในฐานข้อมูลระบบ</Text>
             )}
 
             {/* Numeric Keypad Grid */}

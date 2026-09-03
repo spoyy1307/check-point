@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -18,6 +18,8 @@ import { COLORS } from "../constants/colors";
 import TopBar from "../components/TopBar";
 import { useUserStore, UserProfile } from "../lib/userStore";
 import { useCheckpointMobileStore } from "../lib/checkpointMobileStore";
+import { apiClient } from "../lib/api";
+import { SmartVisitorGuardAccount } from "../types/checkpointMobile";
 
 const avatarEmojis = ["👮‍♂️", "👮", "👮‍♀️", "👨‍✈️", "🛡️"];
 
@@ -52,9 +54,17 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const userStore = useUserStore();
   const profile = userStore.getProfile();
-  const guards = userStore.getAvailableGuards();
   const cpStore = useCheckpointMobileStore();
   const factory = cpStore.getFactory();
+  const [guards, setGuards] = useState<SmartVisitorGuardAccount[]>(cpStore.getGuardsForCurrentFactory());
+
+  useEffect(() => {
+    cpStore.fetchGuardsForFactory(factory.id).then((res) => {
+      if (res && res.length > 0) {
+        setGuards(res);
+      }
+    });
+  }, [factory.id]);
 
   // Mode: "view" vs "edit"
   const [isEditing, setIsEditing] = useState(false);
@@ -71,7 +81,7 @@ export default function ProfileScreen() {
   // Switch Account Modal State & Step
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [switchStep, setSwitchStep] = useState<"list" | "pin">("list");
-  const [targetGuard, setTargetGuard] = useState<UserProfile | null>(null);
+  const [targetGuard, setTargetGuard] = useState<SmartVisitorGuardAccount | null>(null);
   const [enteredPin, setEnteredPin] = useState<string>("");
   const [pinError, setPinError] = useState<string | null>(null);
 
@@ -152,7 +162,7 @@ export default function ProfileScreen() {
     setIsEditing(false);
   };
 
-  const handlePressGuard = (g: UserProfile) => {
+  const handlePressGuard = (g: SmartVisitorGuardAccount) => {
     if (g.employeeId === profile.employeeId) {
       setShowSwitchModal(false);
       return;
@@ -173,21 +183,48 @@ export default function ProfileScreen() {
       const requiredLength = targetPin.length === 4 ? 4 : 6;
 
       if (nextPin.length === requiredLength && targetGuard) {
-        // Verify PIN
-        const isValid = userStore.verifyGuardPin(targetGuard.employeeId, nextPin);
-        if (isValid) {
-          setTimeout(() => {
-            handleSelectGuard(targetGuard.employeeId);
-            setShowSwitchModal(false);
-            setSwitchStep("list");
-            setEnteredPin("");
-          }, 150);
-        } else {
-          setPinError("รหัส PIN ไม่ถูกต้อง (รหัสเริ่มต้น: 123456)");
-          setTimeout(() => {
-            setEnteredPin("");
-          }, 800);
-        }
+        const cleanAccount = targetGuard.username?.replace("@", "") || targetGuard.employeeId;
+
+        apiClient
+          .post("/auth/login-pin", {
+            accountName: cleanAccount,
+            pin: nextPin
+          })
+          .then((res) => {
+            if (res && res.success && res.data?.token) {
+              apiClient.setToken(res.data.token);
+              userStore.setProfileFromGuard(targetGuard);
+              cpStore.switchGuardAccount(targetGuard);
+              setName(targetGuard.name);
+              setPhone(targetGuard.phone);
+              setRole(targetGuard.role);
+              setShift(targetGuard.shift);
+              setZone(targetGuard.assignedZone);
+              setAvatarUri(targetGuard.avatarUri);
+              setAvatarEmoji(targetGuard.avatarEmoji || "👮‍♂️");
+              setShowSwitchModal(false);
+              setSwitchStep("list");
+              setEnteredPin("");
+              setIsEditing(false);
+              Alert.alert(
+                "✓ สลับบัญชีสำเร็จ",
+                `เข้าสู่ระบบในชื่อ ${targetGuard.name} (${targetGuard.role}) สำหรับกะนี้แล้ว`
+              );
+            } else {
+              setPinError(
+                res?.message || (res?.data as any)?.error || "รหัส PIN ไม่ถูกต้อง (ตรวจสอบจากฐานข้อมูลจริง)"
+              );
+              setTimeout(() => {
+                setEnteredPin("");
+              }, 800);
+            }
+          })
+          .catch((err) => {
+            setPinError(err?.message || "รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+            setTimeout(() => {
+              setEnteredPin("");
+            }, 800);
+          });
       }
     }
   };
@@ -697,12 +734,18 @@ export default function ProfileScreen() {
               {targetGuard && (
                 <View style={styles.pinTargetCard}>
                   <View style={styles.pinTargetAvatarWrap}>
-                    <Text style={{ fontSize: 28 }}>{targetGuard.avatarEmoji || "👮"}</Text>
+                    {targetGuard.avatarUri ? (
+                      <Image source={{ uri: targetGuard.avatarUri }} style={styles.smallAvatarImg} />
+                    ) : (
+                      <Text style={{ fontSize: 28 }}>{targetGuard.avatarEmoji || "👮"}</Text>
+                    )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.pinTargetName}>{targetGuard.name}</Text>
                     <Text style={styles.pinTargetRole}>{targetGuard.role}</Text>
-                    <Text style={styles.pinTargetId}>รหัสพนักงาน: {targetGuard.employeeId}</Text>
+                    <Text style={styles.pinTargetId}>
+                      {targetGuard.username || `รหัสพนักงาน: ${targetGuard.employeeId}`}
+                    </Text>
                   </View>
                 </View>
               )}
@@ -735,7 +778,7 @@ export default function ProfileScreen() {
                 <Text style={styles.pinErrorText}>{pinError}</Text>
               ) : (
                 <Text style={styles.pinHintText}>
-                  * กำหนดโดยผู้ดูแลระบบ (รหัสเริ่มต้น: 123456)
+                  * รหัสผ่าน PIN 6 หลักที่บันทึกในฐานข้อมูลระบบ
                 </Text>
               )}
 

@@ -16,102 +16,21 @@ export type UserProfile = {
   pin?: string;
 };
 
-export const AVAILABLE_GUARDS: UserProfile[] = [
-  {
-    name: "นายคเณศ สิมมะลา",
-    employeeId: "00101",
-    username: "@kendo",
-    role: "หัวหน้ารักษาความปลอดภัย",
-    phone: "081-111-2233",
-    shift: "กะเช้า (08:00 - 20:00 น.)",
-    zone: "ทุกโซนพื้นที่ส่วนกลาง",
-    avatarEmoji: "👮‍♂️",
-    startDate: "1 ม.ค. 2565",
-    isLoggedIn: false,
-    pin: "123456"
-  },
-  {
-    name: "นายอภิโชค สิมศรีแก้ว",
-    employeeId: "00102",
-    username: "@tiw",
-    role: "หัวหน้ารักษาความปลอดภัย",
-    phone: "082-222-3344",
-    shift: "กะดึก (20:00 - 08:00 น.)",
-    zone: "อาคารผลิตและคลังสินค้า",
-    avatarEmoji: "👮",
-    startDate: "15 ก.พ. 2565",
-    isLoggedIn: false,
-    pin: "123456"
-  },
-  {
-    name: "นางสาวอัจฉรา จากสูงเนิน",
-    employeeId: "00103",
-    username: "@poy",
-    role: "เจ้าหน้าที่ รปภ.",
-    phone: "083-333-4455",
-    shift: "กะบ่าย (14:00 - 22:00 น.)",
-    zone: "ประตูทางเข้าหลัก และจุดคัดกรอง",
-    avatarEmoji: "👮‍♀️",
-    startDate: "1 พ.ค. 2566",
-    isLoggedIn: false,
-    pin: "123456"
-  },
-  {
-    name: "พงษ์พล อุทกานต์ภัทรกุล",
-    employeeId: "00123",
-    username: "@pongpol",
-    role: "รปภ. ประจำกะดึก",
-    phone: "081-234-5678",
-    shift: "กะดึก (20:00 - 08:00 น.)",
-    zone: "อาคาร A และลานจอดรถส่วนกลาง",
-    avatarEmoji: "👮‍♂️",
-    startDate: "1 ม.ค. 2566",
-    isLoggedIn: false,
-    pin: "123456"
-  },
-  {
-    name: "สมศักดิ์ ปลอดภัย",
-    employeeId: "00124",
-    username: "@somsak",
-    role: "รปภ. ประจำกะเช้า",
-    phone: "089-555-1122",
-    shift: "กะเช้า (08:00 - 20:00 น.)",
-    zone: "ประตูทางเข้าหลัก และป้อมยามหน้า",
-    avatarEmoji: "👮",
-    startDate: "15 พ.ค. 2565",
-    isLoggedIn: false,
-    pin: "123456"
-  },
-  {
-    name: "วิภาดา มั่นคง",
-    employeeId: "00125",
-    username: "@vipada",
-    role: "รปภ. ประจำจุดคัดกรอง",
-    phone: "086-777-8899",
-    shift: "กะบ่าย (14:00 - 22:00 น.)",
-    zone: "ล็อบบี้ตึกอำนวยการ",
-    avatarEmoji: "👮‍♀️",
-    startDate: "10 ก.ค. 2566",
-    isLoggedIn: false,
-    pin: "123456"
-  },
-  {
-    name: "ธีรเดช เจริญสุข",
-    employeeId: "00126",
-    username: "@theeradej",
-    role: "หัวหน้าชุด รปภ. เวรตรวจ",
-    phone: "082-999-3344",
-    shift: "กะพิเศษ (เวรตรวจความปลอดภัย 24 ชม.)",
-    zone: "ทุกโซนพื้นที่ส่วนกลาง",
-    avatarEmoji: "👨‍✈️",
-    startDate: "1 มี.ค. 2564",
-    isLoggedIn: false,
-    pin: "123456"
-  }
-];
+export const AVAILABLE_GUARDS: UserProfile[] = [];
 
-let currentProfile: UserProfile = { ...AVAILABLE_GUARDS[0] };
-let allGuards: UserProfile[] = [...AVAILABLE_GUARDS];
+let currentProfile: UserProfile = {
+  name: "เจ้าหน้าที่ รปภ.",
+  employeeId: "00000",
+  username: "@guard",
+  role: "รปภ. ประจำจุด",
+  phone: "081-000-0000",
+  shift: "กะปฏิบัติการประจำวัน",
+  zone: "ทุกโซนพื้นที่ส่วนกลาง",
+  avatarEmoji: "👮",
+  startDate: "พนักงานประจำ",
+  isLoggedIn: false
+};
+let allGuards: UserProfile[] = [];
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
