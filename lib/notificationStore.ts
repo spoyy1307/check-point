@@ -79,28 +79,37 @@ export const notificationStore = {
   },
 
   // Helper to trigger realistic Real-Time Patrol Round Alert
-  triggerTestPatrolReminder(roundNum: number = 2, minutesBefore: number = 5) {
+  triggerTestPatrolReminder(
+    roundNum: number = 1,
+    minutesBefore: number = 5,
+    roundTimeStr?: string,
+    factoryNameStr?: string
+  ) {
     const now = new Date();
-    const timeStr = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.";
-    const dateStr = `${now.getDate()} ส.ค. 2569`;
-    
-    const minutesText = minutesBefore === 0 ? "เริ่มตรวจทันที" : `จะเริ่มในอีก ${minutesBefore} นาที`;
+    const timeStr =
+      now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.";
+    const dateStr = `${now.getDate()} ส.ค. ${now.getFullYear() + 543}`;
+
+    const minutesText =
+      minutesBefore === 0 ? "ถึงเวลาเริ่มตรวจแล้ว" : `อีก ${minutesBefore} นาที`;
+    const facName = factoryNameStr || "พื้นที่โรงงานโครงการ";
+    const schedTime = roundTimeStr || timeStr;
 
     const newNotif: NotificationItem = {
       id: `NOTIF-PAT-${Date.now()}`,
-      title: `⏰ แจ้งเตือนรอบตรวจ: ใกล้ถึงเวลาตรวจรอบที่ ${roundNum}`,
+      title: `🔔 แจ้งเตือน ใกล้ถึงเวลาการตรวจ ${minutesText}`,
       category: "patrol",
       priority: "normal",
-      summary: `รอบตรวจที่ ${roundNum} ${minutesText} มีทั้งหมด 8 จุดตรวจ`,
-      content: `ระบบตรวจจับตามตารางกะปฏิบัติงาน กรุณาเตรียมความพร้อมและเริ่มออกตรวจตามจุดที่ 1-8 ตามกำหนดเวลา`,
+      summary: `รอบการตรวจที่ ${roundNum} เวลาเริ่มตรวจ ${schedTime} โครงการ ${facName}`,
+      content: `ระบบตรวจจับตามตารางกะปฏิบัติงาน กรุณาเตรียมความพร้อมและเริ่มออกตรวจตามรอบเวลาที่กำหนด`,
       timestamp: timeStr,
       date: dateStr,
       isRead: false,
       patrolData: {
         roundId: roundNum,
         roundName: `รอบที่ ${roundNum} (ประจำกะ)`,
-        scheduledTime: timeStr,
-        totalPoints: 8
+        scheduledTime: schedTime,
+        totalPoints: 0
       }
     };
 

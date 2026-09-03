@@ -63,19 +63,33 @@ export const patrolReminderEngine = {
         const todayKey = `${now.toISOString().split("T")[0]}_round_${round.id}_${diffMinutes}`;
         if (!notifiedRounds.has(todayKey)) {
           notifiedRounds.add(todayKey);
-          notificationStore.triggerTestPatrolReminder(round.id, diffMinutes);
+          const factory = checkpointMobileStore.getFactory();
+          notificationStore.triggerTestPatrolReminder(
+            round.id,
+            diffMinutes,
+            round.time,
+            factory.name
+          );
           break;
         }
       }
     }
   },
 
-  triggerInstantTest(type: "patrol" | "announcement" = "patrol", roundNum: number = 2) {
+  triggerInstantTest(type: "patrol" | "announcement" = "patrol", roundNum: number = 1) {
     const settings = checkpointMobileStore.getSettings();
     const reminderMinutes = getReminderMinutesFromSetting(settings.reminderTime);
+    const factory = checkpointMobileStore.getFactory();
+    const rounds = patrolStore.getRounds();
+    const foundRound = rounds.find((r) => r.id === roundNum) || rounds[0];
 
     if (type === "patrol") {
-      return notificationStore.triggerTestPatrolReminder(roundNum, reminderMinutes);
+      return notificationStore.triggerTestPatrolReminder(
+        roundNum,
+        reminderMinutes,
+        foundRound ? foundRound.time : "13:00 - 18:00 น.",
+        factory.name
+      );
     } else {
       return notificationStore.triggerTestAnnouncement();
     }
