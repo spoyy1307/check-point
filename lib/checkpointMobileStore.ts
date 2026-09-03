@@ -41,12 +41,30 @@ let checkpointMobileState: CheckPointMobileData["check-point-mobile"] = {
   }
 };
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const CP_STORAGE_KEY = "@checkpoint_mobile_state";
+
 type Listener = () => void;
 const listeners = new Set<Listener>();
 
 function notify() {
   listeners.forEach((l) => l());
+  AsyncStorage.setItem(CP_STORAGE_KEY, JSON.stringify(checkpointMobileState)).catch(() => {});
 }
+
+// Hydrate mobile state from AsyncStorage on startup
+AsyncStorage.getItem(CP_STORAGE_KEY).then((raw) => {
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.factory) {
+        checkpointMobileState = { ...checkpointMobileState, ...parsed };
+        listeners.forEach((l) => l());
+      }
+    } catch {}
+  }
+}).catch(() => {});
 
 let allFactoryGuards: SmartVisitorGuardAccount[] = [...SMART_VISITOR_GUARDS];
 let isFactoryBoundState = false;

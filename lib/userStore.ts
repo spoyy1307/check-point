@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "./api";
 
 export type UserProfile = {
@@ -17,6 +18,8 @@ export type UserProfile = {
 };
 
 export const AVAILABLE_GUARDS: UserProfile[] = [];
+
+const STORAGE_KEY = "@checkpoint_user_profile";
 
 let currentProfile: UserProfile = {
   name: "เจ้าหน้าที่ รปภ.",
@@ -37,7 +40,21 @@ const listeners = new Set<Listener>();
 
 function notify() {
   listeners.forEach((l) => l());
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(currentProfile)).catch(() => {});
 }
+
+// Hydrate profile from AsyncStorage on startup
+AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.employeeId) {
+        currentProfile = { ...currentProfile, ...parsed };
+        listeners.forEach((l) => l());
+      }
+    } catch {}
+  }
+}).catch(() => {});
 
 export const userStore = {
   getProfile(): UserProfile {
