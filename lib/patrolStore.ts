@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckpointItem, CheckpointStatus, PATROL_ROUNDS, PatrolRound } from "../types/patrol";
 import { api, apiClient } from "./api";
+
+const PATROL_STORAGE_KEY = "@checkpoint_patrol_rounds";
 
 // In-memory state for active session
 let roundsData: PatrolRound[] = JSON.parse(JSON.stringify(PATROL_ROUNDS));
@@ -10,7 +13,21 @@ const listeners = new Set<Listener>();
 
 function notifyListeners() {
   listeners.forEach((listener) => listener());
+  AsyncStorage.setItem(PATROL_STORAGE_KEY, JSON.stringify(roundsData)).catch(() => {});
 }
+
+// Hydrate rounds from AsyncStorage on startup
+AsyncStorage.getItem(PATROL_STORAGE_KEY).then((raw) => {
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        roundsData = parsed;
+        listeners.forEach((l) => l());
+      }
+    } catch {}
+  }
+}).catch(() => {});
 
 export const patrolStore = {
   getRounds(): PatrolRound[] {
@@ -111,6 +128,19 @@ export const patrolStore = {
     notifyListeners();
 
     // Call Backend API to record completion
+    apiClient
+      .post("/checkpoints/scans", {
+        checkpointId: pointId,
+        roundId: roundId,
+        status: status === "late" ? "late" : "on_time",
+        photos: photoArray,
+        scanLatitude: round.checkpoints[pointIndex].latitude,
+        scanLongitude: round.checkpoints[pointIndex].longitude,
+        reason: reason || undefined,
+        scannedAt: new Date().toISOString()
+      })
+      .catch(() => {});
+
     api.patrol
       .completeCheckpoint(roundId, pointId, {
         status: status === "late" ? "late" : "on_time",
