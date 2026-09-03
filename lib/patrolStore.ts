@@ -115,7 +115,7 @@ export const patrolStore = {
 
   getOverallStats() {
     const rounds = roundsData;
-    const totalPoints = rounds.reduce((acc, r) => acc + r.points, 0);
+    const totalPoints = rounds.reduce((acc, r) => acc + (r.checkpoints?.length || r.points || 0), 0) || 32;
 
     let onTimeCount = 0;
     let lateCount = 0;
@@ -129,21 +129,25 @@ export const patrolStore = {
       });
     });
 
-    // Consistent real summary metrics
     const completedPoints = onTimeCount + lateCount;
-    const finalOnTime = completedPoints > 0 ? onTimeCount : 28;
-    const finalLate = completedPoints > 0 ? lateCount : 2;
-    const finalCompleted = completedPoints > 0 ? completedPoints : 30;
-    const score = 95;
+    // Real-time score starting from 100 base score
+    const calculatedScore = Math.max(0, 100 - (lateCount * 5));
+    const score = completedPoints > 0 ? calculatedScore : 100;
+
+    let scoreGrade = "ยอดเยี่ยม (A+)";
+    if (score >= 95) scoreGrade = "ยอดเยี่ยม (A+)";
+    else if (score >= 85) scoreGrade = "ดีมาก (A)";
+    else if (score >= 75) scoreGrade = "ผ่านเกณฑ์ (B)";
+    else scoreGrade = "ต้องปรับปรุง (C)";
 
     return {
-      totalPoints: totalPoints || 32,
-      completedPoints: finalCompleted,
-      onTimeCount: finalOnTime,
-      lateCount: finalLate,
+      totalPoints,
+      completedPoints,
+      onTimeCount,
+      lateCount,
       missCount: 0,
-      score: score,
-      scoreGrade: "ดีมาก"
+      score,
+      scoreGrade
     };
   },
 

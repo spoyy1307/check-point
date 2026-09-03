@@ -259,7 +259,7 @@ export default function LoginScreen() {
                         {f.name}
                       </Text>
                       <Text style={styles.factoryItemSub}>
-                        {f.branchName} • {f.totalCheckpoints} จุดตรวจ
+                        {f.branchName} • {f.totalCheckpoints ? `${f.totalCheckpoints} จุดตรวจ` : "รอแอดมินกำหนดจุด"}
                       </Text>
                     </View>
                     <View style={[styles.switchRadio, isSelected && styles.switchRadioActive]}>

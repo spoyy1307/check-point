@@ -107,7 +107,7 @@ export const checkpointMobileStore = {
           latitude: Number(f.latitude) || 14.9033,
           longitude: Number(f.longitude) || 102.0562,
           zones: ["ทุกโซนพื้นที่ส่วนกลาง", "อาคารฝ่ายผลิต", "ลานจอดรถ"],
-          totalCheckpoints: 8
+          totalCheckpoints: Number(f.totalCheckpoints) || (f.checkpointsCount !== undefined ? Number(f.checkpointsCount) : (String(f.id) === "4" ? 8 : 0))
         }));
 
         activeFactoriesList = mapped;
