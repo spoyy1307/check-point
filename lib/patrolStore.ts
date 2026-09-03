@@ -115,7 +115,10 @@ export const patrolStore = {
 
   getOverallStats() {
     const rounds = roundsData;
-    const totalPoints = rounds.reduce((acc, r) => acc + (r.checkpoints?.length || r.points || 0), 0) || 32;
+    const totalPoints = rounds.reduce(
+      (acc, r) => acc + (r.checkpoints?.length || r.points || 0),
+      0
+    );
 
     let onTimeCount = 0;
     let lateCount = 0;
