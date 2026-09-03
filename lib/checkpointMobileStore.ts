@@ -116,6 +116,10 @@ export const checkpointMobileStore = {
         if (!activeFactoriesList.some((f) => f.id === checkpointMobileState.factory.id)) {
           checkpointMobileState.factory = { ...mapped[0] };
         }
+        
+        // Auto fetch real guards for the selected factory
+        this.fetchGuardsForFactory(checkpointMobileState.factory.id).catch(() => {});
+        
         notify();
         return mapped;
       }
@@ -123,6 +127,51 @@ export const checkpointMobileStore = {
       console.log("Cannot load real factories from backend, using fallback:", err);
     }
     return activeFactoriesList;
+  },
+
+  async fetchGuardsForFactory(factoryId: string): Promise<SmartVisitorGuardAccount[]> {
+    try {
+      const res = await apiClient.get(`/factories/${factoryId}/guards/public`);
+      const rawList = Array.isArray(res?.data)
+        ? res.data
+        : (Array.isArray(res) ? res : (Array.isArray(res?.data?.data) ? res.data.data : null));
+
+      if (rawList && rawList.length > 0) {
+        const activeFactory = activeFactoriesList.find((f) => f.id === factoryId) || checkpointMobileState.factory;
+        const mapped: SmartVisitorGuardAccount[] = rawList.map((g: any) => ({
+          smartVisitorUserId: String(g.id),
+          employeeId: String(g.id),
+          username: g.accountName ? (g.accountName.startsWith("@") ? g.accountName : `@${g.accountName}`) : `@guard_${g.id}`,
+          name: `${g.prefix ? (g.prefix === 'Mr.' ? 'นาย' : g.prefix === 'Ms.' ? 'น.ส.' : g.prefix) + ' ' : ''}${g.firstName || ''} ${g.lastName || ''}`.trim() || g.accountName || "เจ้าหน้าที่ รปภ.",
+          role: g.accountType === "head_security" ? "หัวหน้าชุด รปภ." : "รปภ. ประจำจุด",
+          phone: g.phone || "081-000-0000",
+          shift: "กะปฏิบัติการประจำวัน",
+          factoryId: String(factoryId),
+          factoryName: activeFactory.name,
+          assignedZone: g.gateName || "ทุกโซนพื้นที่ส่วนกลาง",
+          avatarUri: g.imageUrl || undefined,
+          avatarEmoji: "👮",
+          startDate: "พนักงานประจำ",
+          isLoggedIn: false,
+          pin: "123456"
+        }));
+
+        // Replace/merge guards for this factory
+        allFactoryGuards = [
+          ...mapped,
+          ...allFactoryGuards.filter((g) => g.factoryId !== factoryId)
+        ];
+
+        if (mapped.length > 0) {
+          checkpointMobileState.guardAccount = { ...mapped[0], isLoggedIn: false };
+        }
+        notify();
+        return mapped;
+      }
+    } catch (e) {
+      console.log("Could not load real guards from backend:", e);
+    }
+    return this.getGuardsForCurrentFactory();
   },
 
   setFactory(factoryId: string) {
@@ -138,6 +187,9 @@ export const checkpointMobileStore = {
       if (factoryGuards.length > 0) {
         checkpointMobileState.guardAccount = { ...factoryGuards[0], isLoggedIn: false };
       }
+
+      // Fetch real guards from server for newly selected factory
+      this.fetchGuardsForFactory(found.id).catch(() => {});
 
       notify();
 

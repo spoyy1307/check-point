@@ -37,8 +37,8 @@ export default function LoginScreen() {
     });
   }, []);
 
-  const [employeeId, setEmployeeId] = useState("00123");
-  const [password, setPassword] = useState("123456");
+  const [employeeId, setEmployeeId] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);

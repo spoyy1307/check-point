@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -23,7 +23,18 @@ export default function GuardSelectionScreen() {
   const userStore = useUserStore();
 
   const factory = cpStore.getFactory();
-  const guards = cpStore.getGuardsForCurrentFactory();
+  const [guards, setGuards] = useState(cpStore.getGuardsForCurrentFactory());
+  const [loadingGuards, setLoadingGuards] = useState(false);
+
+  useEffect(() => {
+    setLoadingGuards(true);
+    cpStore.fetchGuardsForFactory(factory.id).then((res) => {
+      setLoadingGuards(false);
+      if (res && res.length > 0) {
+        setGuards(res);
+      }
+    });
+  }, [factory.id]);
 
   // PIN Verification State
   const [selectedGuard, setSelectedGuard] = useState<SmartVisitorGuardAccount | null>(null);
