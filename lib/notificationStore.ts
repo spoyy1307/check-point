@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { NotificationItem } from "../types/notification";
 import { systemNotificationHelper } from "./systemNotificationHelper";
+import { userStore } from "./userStore";
 
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
 
 let notifications: NotificationItem[] = [];
+const readMap: Record<string, Set<string>> = {};
+const acknowledgedMap: Record<string, Set<string>> = {};
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -20,48 +23,77 @@ function notifyBanner(item: NotificationItem) {
   bannerListeners.forEach((listener) => listener(item));
 }
 
+function getCurrentGuardId(overrideId?: string): string {
+  if (overrideId) return overrideId;
+  const profile = userStore.getProfile();
+  return profile?.employeeId || "default_guard";
+}
+
 export const notificationStore = {
-  getAllNotifications(): NotificationItem[] {
-    return notifications;
-  },
+  getAllNotifications(guardId?: string): NotificationItem[] {
+    const gid = getCurrentGuardId(guardId);
+    const guardReadSet = readMap[gid] || new Set<string>();
+    const guardAckSet = acknowledgedMap[gid] || new Set<string>();
 
-  getUnreadCount(): number {
-    return notifications.filter((n) => !n.isRead).length;
-  },
-
-  getNotificationsByCategory(category: "all" | "emergency" | "announcement" | "patrol"): NotificationItem[] {
-    if (category === "all") return notifications;
-    return notifications.filter((n) => n.category === category);
-  },
-
-  getNotificationById(id: string): NotificationItem | undefined {
-    return notifications.find((n) => n.id === id);
-  },
-
-  markAsRead(id: string) {
-    notifications = notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n));
-    notify();
-  },
-
-  markAllAsRead() {
-    notifications = notifications.map((n) => ({ ...n, isRead: true }));
-    notify();
-  },
-
-  acknowledgeAnnouncement(id: string) {
-    notifications = notifications.map((n) => {
-      if (n.id === id && n.announcementData) {
-        return {
-          ...n,
-          isRead: true,
-          announcementData: {
+    return notifications.map((n) => ({
+      ...n,
+      isRead: guardReadSet.has(n.id),
+      announcementData: n.announcementData
+        ? {
             ...n.announcementData,
-            acknowledgedByGuard: true
+            acknowledgedByGuard: guardAckSet.has(n.id)
           }
-        };
-      }
-      return n;
-    });
+        : undefined
+    }));
+  },
+
+  getUnreadCount(guardId?: string): number {
+    const all = this.getAllNotifications(guardId);
+    return all.filter((n) => !n.isRead).length;
+  },
+
+  getNotificationsByCategory(
+    category: "all" | "emergency" | "announcement" | "patrol",
+    guardId?: string
+  ): NotificationItem[] {
+    const all = this.getAllNotifications(guardId);
+    if (category === "all") return all;
+    return all.filter((n) => n.category === category);
+  },
+
+  getNotificationById(id: string, guardId?: string): NotificationItem | undefined {
+    const all = this.getAllNotifications(guardId);
+    return all.find((n) => n.id === id);
+  },
+
+  markAsRead(id: string, guardId?: string) {
+    const gid = getCurrentGuardId(guardId);
+    if (!readMap[gid]) {
+      readMap[gid] = new Set<string>();
+    }
+    readMap[gid].add(id);
+    notify();
+  },
+
+  markAllAsRead(guardId?: string) {
+    const gid = getCurrentGuardId(guardId);
+    if (!readMap[gid]) {
+      readMap[gid] = new Set<string>();
+    }
+    notifications.forEach((n) => readMap[gid].add(n.id));
+    notify();
+  },
+
+  acknowledgeAnnouncement(id: string, guardId?: string) {
+    const gid = getCurrentGuardId(guardId);
+    if (!readMap[gid]) {
+      readMap[gid] = new Set<string>();
+    }
+    if (!acknowledgedMap[gid]) {
+      acknowledgedMap[gid] = new Set<string>();
+    }
+    readMap[gid].add(id);
+    acknowledgedMap[gid].add(id);
     notify();
   },
 

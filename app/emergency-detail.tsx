@@ -134,18 +134,6 @@ export default function EmergencyDetailScreen() {
             }
           }
         },
-        {
-          text: "ใช้รูปจำลอง (ทดสอบ)",
-          onPress: () => {
-            const demoUrls = [
-              "https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&auto=format&fit=crop&q=80",
-              "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=800&auto=format&fit=crop&q=80",
-              "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80"
-            ];
-            const demoPick = demoUrls[photos.length % demoUrls.length];
-            addPhoto(demoPick);
-          }
-        },
         { text: "ยกเลิก", style: "cancel" }
       ]
     );

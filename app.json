@@ -36,13 +36,25 @@
       ]
     ],
     "android": {
-      "package": "com.example.guardsafety",
+      "package": "com.smartvisitor.checkpoint",
       "adaptiveIcon": {
         "backgroundColor": "#0B4A97"
-      }
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "ios": {
-      "bundleIdentifier": "com.example.guardsafety"
+      "bundleIdentifier": "com.smartvisitor.checkpoint",
+      "infoPlist": {
+        "NSCameraUsageDescription": "แอปพลิเคชันจำเป็นต้องเข้าถึงกล้องถ่ายรูป เพื่อใช้ถ่ายภาพหลักฐานการตรวจจุดและการแจ้งเหตุฉุกเฉิน",
+        "NSPhotoLibraryUsageDescription": "แอปพลิเคชันจำเป็นต้องเข้าถึงคลังรูปภาพ เพื่อเลือกรูปภาพหลักฐานประกอบการตรวจจุด",
+        "NSLocationWhenInUseUsageDescription": "แอปพลิเคชันจำเป็นต้องเข้าถึงตำแหน่ง GPS เพื่อตรวจสอบระยะห่างของจุดตรวจในพื้นที่โรงงาน"
+      }
     }
   }
 }

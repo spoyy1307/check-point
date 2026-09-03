@@ -28,7 +28,7 @@ export default function LateScreen() {
       roundId,
       checkpoint.id,
       "late",
-      checkpoint.photoUri || "https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80",
+      checkpoint.photoUri || "",
       finalReason
     );
 
