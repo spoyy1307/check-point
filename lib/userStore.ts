@@ -162,6 +162,24 @@ export const userStore = {
     return currentProfile;
   },
 
+  setProfileFromGuard(guard: any) {
+    currentProfile = {
+      name: guard.name || "เจ้าหน้าที่ รปภ.",
+      employeeId: guard.employeeId || "00000",
+      username: guard.username,
+      role: guard.role || "เจ้าหน้าที่ รปภ.",
+      phone: guard.phone || "081-000-0000",
+      shift: guard.shift || "กะปฏิบัติการประจำวัน",
+      zone: guard.assignedZone || guard.zone || "ทุกโซนพื้นที่ส่วนกลาง",
+      avatarUri: guard.avatarUri,
+      avatarEmoji: guard.avatarEmoji || "👮‍♂️",
+      startDate: guard.startDate || "พนักงานประจำ",
+      isLoggedIn: true,
+      pin: guard.pin
+    };
+    notify();
+  },
+
   login(employeeId: string, password?: string) {
     const found = allGuards.find((g) => g.employeeId === employeeId);
     if (found) {

@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../constants/colors";
 import { useUserStore } from "../lib/userStore";
 import { useCheckpointMobileStore } from "../lib/checkpointMobileStore";
+import { apiClient } from "../lib/api";
+import { SmartVisitorGuardAccount } from "../types/checkpointMobile";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -46,18 +48,61 @@ export default function LoginScreen() {
   const activeFactory =
     allFactories.find((f) => f.id === selectedFactoryId) || currentFactory;
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!employeeId.trim() || !password.trim()) {
-      Alert.alert("กรุณากรอกข้อมูล", "โปรดระบุรหัสพนักงาน/รหัสแอดมิน และรหัสผ่าน");
+      Alert.alert("กรุณากรอกข้อมูล", "โปรดระบุชื่อผู้ใช้/รหัสพนักงาน และรหัสผ่าน");
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const cleanAccount = employeeId.trim().replace("@", "");
+      const res = await apiClient.post("/auth/login", {
+        accountName: cleanAccount,
+        password: password.trim(),
+        loginType: "security"
+      });
+
       setLoading(false);
-      cpStore.bindFactory(selectedFactoryId);
-      router.replace("/guard-select");
-    }, 350);
+
+      if (res && res.success && res.data?.token && res.data?.user) {
+        const u = res.data.user;
+        const realGuard: SmartVisitorGuardAccount = {
+          smartVisitorUserId: String(u.id),
+          employeeId: String(u.id),
+          username: u.accountName ? `@${u.accountName}` : `@guard_${u.id}`,
+          name: `${u.prefix ? (u.prefix === "Mr." ? "นาย" : u.prefix === "Ms." ? "น.ส." : u.prefix) + " " : ""}${u.firstName || ""} ${u.lastName || ""}`.trim() || u.accountName || "เจ้าหน้าที่ รปภ.",
+          role: u.accountType === "head_security" ? "หัวหน้าชุด รปภ." : "รปภ. ประจำจุด",
+          phone: u.phone || "081-000-0000",
+          shift: "กะปฏิบัติการประจำวัน",
+          factoryId: String(u.factoryId || selectedFactoryId),
+          factoryName: u.factoryName || activeFactory.name,
+          assignedZone: u.gateName || "ทุกโซนพื้นที่ส่วนกลาง",
+          avatarUri: u.imageUrl || undefined,
+          avatarEmoji: "👮",
+          startDate: "พนักงานประจำ",
+          isLoggedIn: true
+        };
+
+        apiClient.setToken(res.data.token);
+        cpStore.bindFactory(realGuard.factoryId);
+        cpStore.switchGuardAccount(realGuard);
+        userStore.setProfileFromGuard(realGuard);
+
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert(
+          "เข้าสู่ระบบไม่สำเร็จ",
+          res?.message || (res?.data as any)?.error || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบข้อมูลในฐานข้อมูล"
+        );
+      }
+    } catch (err: any) {
+      setLoading(false);
+      Alert.alert(
+        "เข้าสู่ระบบไม่สำเร็จ",
+        err?.message || "ไม่สามารถเชื่อมต่อระบบยืนยันตัวตนได้ กรุณาลองใหม่อีกครั้ง"
+      );
+    }
   };
 
   const handleQuickDemo = (empId: string = "00123") => {
@@ -197,7 +242,21 @@ export default function LoginScreen() {
           >
             <Ionicons name="log-in-outline" size={22} color="white" />
             <Text style={styles.loginButtonText}>
-              {loading ? "กำลังดำเนินการ..." : "ลงทะเบียนและเลือกบัญชี รปภ."}
+              {loading ? "กำลังตรวจสอบข้อมูล..." : "เข้าสู่ระบบ (Login)"}
+            </Text>
+          </Pressable>
+
+          {/* Alternative PIN Login Button */}
+          <Pressable
+            style={({ pressed }) => [styles.pinSelectBtn, pressed && styles.btnPressed]}
+            onPress={() => {
+              cpStore.bindFactory(selectedFactoryId);
+              router.push("/guard-select");
+            }}
+          >
+            <Ionicons name="keypad-outline" size={20} color="#0C4A94" />
+            <Text style={styles.pinSelectBtnText}>
+              เข้าใช้งานด้วยรหัส PIN (เลือกบัญชี รปภ.)
             </Text>
           </Pressable>
         </View>
@@ -493,17 +552,21 @@ const styles = StyleSheet.create({
     fontSize: 15.5,
     fontWeight: "900"
   },
-  demoButton: {
+  pinSelectBtn: {
     marginTop: 10,
-    backgroundColor: "#F1F5F9",
-    height: 44,
-    borderRadius: 12,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1.5,
+    borderColor: "#BFDBFE",
+    height: 48,
+    borderRadius: 14,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    gap: 8
   },
-  demoButtonText: {
-    color: "#475569",
-    fontSize: 12.5,
+  pinSelectBtnText: {
+    color: "#0C4A94",
+    fontSize: 13.5,
     fontWeight: "800"
   },
   btnPressed: {

@@ -240,19 +240,31 @@ export const checkpointMobileStore = {
     return created;
   },
 
-  switchGuardAccount(employeeId: string): SmartVisitorGuardAccount {
-    const target = allFactoryGuards.find((g) => g.employeeId === employeeId);
+  switchGuardAccount(guardAccountOrId: string | SmartVisitorGuardAccount): SmartVisitorGuardAccount {
+    let target: SmartVisitorGuardAccount | undefined;
+    if (typeof guardAccountOrId === "object") {
+      target = guardAccountOrId;
+    } else {
+      target = allFactoryGuards.find(
+        (g) =>
+          g.employeeId === guardAccountOrId ||
+          g.username === guardAccountOrId ||
+          g.smartVisitorUserId === guardAccountOrId
+      );
+    }
+
     if (target) {
-      // If guard belongs to different factory, also switch factory context
-      const targetFactory = SMART_VISITOR_FACTORIES.find((f) => f.id === target.factoryId);
+      const targetFactory =
+        activeFactoriesList.find((f) => f.id === target!.factoryId) || checkpointMobileState.factory;
+
       checkpointMobileState = {
         ...checkpointMobileState,
         guardAccount: { ...target, isLoggedIn: true },
-        factory: targetFactory ? { ...targetFactory } : checkpointMobileState.factory
+        factory: { ...targetFactory }
       };
       notify();
 
-      api.auth.switchGuard(employeeId).catch(() => {});
+      api.auth.switchGuard(target.employeeId).catch(() => {});
       return checkpointMobileState.guardAccount;
     }
     return checkpointMobileState.guardAccount;

@@ -71,16 +71,16 @@ export default function GuardSelectionScreen() {
           .then((res) => {
             if (res && res.success && res.data?.token) {
               apiClient.setToken(res.data.token);
-              userStore.login(selectedGuard.employeeId);
-              cpStore.switchGuardAccount(selectedGuard.employeeId);
+              userStore.setProfileFromGuard(selectedGuard);
+              cpStore.switchGuardAccount(selectedGuard);
               setSelectedGuard(null);
               setEnteredPin("");
               router.replace("/(tabs)");
             } else {
               // Fallback for local testing / default PIN
               if (nextPin === targetPin || nextPin === "123456" || nextPin === "000000") {
-                userStore.login(selectedGuard.employeeId);
-                cpStore.switchGuardAccount(selectedGuard.employeeId);
+                userStore.setProfileFromGuard(selectedGuard);
+                cpStore.switchGuardAccount(selectedGuard);
                 setSelectedGuard(null);
                 setEnteredPin("");
                 router.replace("/(tabs)");
@@ -94,8 +94,8 @@ export default function GuardSelectionScreen() {
           })
           .catch(() => {
             if (nextPin === targetPin || nextPin === "123456") {
-              userStore.login(selectedGuard.employeeId);
-              cpStore.switchGuardAccount(selectedGuard.employeeId);
+              userStore.setProfileFromGuard(selectedGuard);
+              cpStore.switchGuardAccount(selectedGuard);
               setSelectedGuard(null);
               setEnteredPin("");
               router.replace("/(tabs)");
