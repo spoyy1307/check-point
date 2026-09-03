@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scoreHistoryStore, ScoreLogItem, TrendPoint } from "../lib/scoreHistoryStore";
+import { usePatrolStore } from "../lib/patrolStore";
 
 interface ScoreCalendarModalProps {
   visible: boolean;
@@ -39,6 +40,8 @@ export default function ScoreCalendarModal({
   onClose
 }: ScoreCalendarModalProps) {
   const insets = useSafeAreaInsets();
+  const patrolStore = usePatrolStore();
+  const currentStats = patrolStore.getOverallStats();
 
   // Current real-time Date (Real-time current date, month & year)
   const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth());
@@ -109,18 +112,21 @@ export default function ScoreCalendarModal({
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const startDayOfWeek = new Date(currentYear, currentMonth, 1).getDay(); // 0 = Sun
 
-  // Generate day items with scores
+  const realToday = new Date();
+  const isCurrentToday = (d: number) =>
+    d === realToday.getDate() &&
+    currentMonth === realToday.getMonth() &&
+    currentYear === realToday.getFullYear();
+
+  // Generate day items with scores (strictly real-time)
   const daysList = Array.from({ length: daysInMonth }, (_, i) => {
     const dayNum = i + 1;
-    let score = 90 + ((dayNum * 7) % 8) - (dayNum % 4 === 0 ? 5 : 0);
-    if (dayNum === 1) score = 97;
-    if (dayNum === 8) score = 88;
-    if (dayNum === 9) score = 92;
-    if (dayNum === 10) score = 90;
-    if (dayNum === 11) score = 95;
-    if (dayNum === 12) score = 93;
-    if (dayNum === 13) score = 94;
-    if (dayNum === 14) score = 95;
+    const isToday = isCurrentToday(dayNum);
+    const hasRecord = isToday;
+    const score = isToday ? currentStats.score : 100;
+    const onTime = isToday ? currentStats.onTimeCount : 0;
+    const late = isToday ? currentStats.lateCount : 0;
+    const miss = isToday ? currentStats.missCount : 0;
 
     const dayStr = `${dayNum} ${MONTH_ABBR[currentMonth]}`;
     const fullDate = `${dayNum} ${MONTH_NAMES[currentMonth]} ${currentYear}`;
@@ -129,10 +135,11 @@ export default function ScoreCalendarModal({
       dayNum,
       dayStr,
       fullDate,
+      hasRecord,
       score,
-      onTime: 16 + (dayNum % 3),
-      late: dayNum % 4 === 0 ? 3 : dayNum % 2 === 0 ? 2 : 1,
-      miss: dayNum === 8 ? 1 : 0
+      onTime,
+      late,
+      miss
     };
   });
 
@@ -141,7 +148,7 @@ export default function ScoreCalendarModal({
   // Daily audit logs for selected day
   const dailyLogs: ScoreLogItem[] = scoreHistoryStore.getAuditLogs(
     "all",
-    `${selectedDayItem.dayNum} พ.ค. 2026`
+    selectedDayItem.fullDate
   );
 
   const handleOpenDailyDetail = () => {
@@ -224,18 +231,20 @@ export default function ScoreCalendarModal({
                       {item.dayNum}
                     </Text>
 
-                    {/* Score Dot Indicator */}
-                    <View
-                      style={[
-                        styles.scoreDot,
-                        isHigh
-                          ? styles.dotGreen
-                          : isMedium
-                          ? styles.dotYellow
-                          : styles.dotRed,
-                        isSelected && styles.scoreDotActive
-                      ]}
-                    />
+                    {/* Score Dot Indicator (only if recorded) */}
+                    {item.hasRecord && (
+                      <View
+                        style={[
+                          styles.scoreDot,
+                          isHigh
+                            ? styles.dotGreen
+                            : isMedium
+                            ? styles.dotYellow
+                            : styles.dotRed,
+                          isSelected && styles.scoreDotActive
+                        ]}
+                      />
+                    )}
                   </Pressable>
                 );
               })}
@@ -265,7 +274,9 @@ export default function ScoreCalendarModal({
                   <Text style={styles.selectedDateTitle}>{selectedDayItem.fullDate}</Text>
                 </View>
                 <View style={styles.selectedScoreBadge}>
-                  <Text style={styles.selectedScoreVal}>{selectedDayItem.score}</Text>
+                  <Text style={styles.selectedScoreVal}>
+                    {selectedDayItem.hasRecord ? selectedDayItem.score : "-"}
+                  </Text>
                   <Text style={styles.selectedScoreSub}>/100</Text>
                 </View>
               </View>

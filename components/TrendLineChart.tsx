@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export type TrendPoint = {
   day: string;
@@ -20,6 +21,20 @@ export default function TrendLineChart({ data, selectedIndex, onSelectPoint }: P
   const yLabels = [100, 80, 60, 40, 20, 0];
   const maxScore = 100;
   const minScore = 0;
+
+  if (!data || data.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center", paddingVertical: 24 }]}>
+        <Ionicons name="stats-chart-outline" size={32} color="#94A3B8" />
+        <Text style={{ fontSize: 13, color: "#64748B", fontWeight: "700", marginTop: 8 }}>
+          ยังไม่มีประวัติการเดินตรวจในรอบที่เลือก
+        </Text>
+        <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
+          คะแนนวันนี้เริ่มต้นที่ 100 คะแนนเต็ม
+        </Text>
+      </View>
+    );
+  }
 
   // Check if it's 7 days view or long range (14 / 30 days)
   const isSevenDays = data.length <= 7;

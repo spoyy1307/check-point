@@ -41,35 +41,53 @@ export default function RoundsScreen() {
         <Text style={styles.headingSub}>เลือกช่วงเวลาเพื่อเริ่มตรวจจุด</Text>
       </View>
 
-      {rounds.map((round) => {
-        const isComplete = round.completed === round.points;
+      {rounds.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="shield-outline" size={40} color="#0C4A94" />
+          </View>
+          <Text style={styles.emptyTitle}>ยังไม่มีรอบการเดินตรวจ</Text>
+          <Text style={styles.emptySub}>
+            ผู้ดูแลระบบ (Admin) ยังไม่ได้กำหนดจุดตรวจหรือรอบเวลาในระบบ
+          </Text>
+          <View style={styles.emptyInfoBox}>
+            <Ionicons name="information-circle-outline" size={18} color="#0369A1" />
+            <Text style={styles.emptyInfoText}>
+              เมื่อแอดมินสร้างจุดตรวจในระบบหลังบ้าน ข้อมูลจะแสดงที่นี่โดยอัตโนมัติ
+            </Text>
+          </View>
+        </View>
+      ) : (
+        rounds.map((round) => {
+          const isComplete = round.completed === round.points;
 
-        return (
-          <Pressable
-            key={round.id}
-            style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-            onPress={() => handleRoundPress(round.id, isComplete)}
-          >
-            <View style={styles.main}>
-              <Text style={styles.title}>{round.title}</Text>
-              <Text style={styles.time}>{round.time}</Text>
-            </View>
-            <View style={styles.right}>
-              <Text
-                style={[
-                  styles.count,
-                  round.status === "late" && { color: COLORS.orange },
-                  isComplete && { color: COLORS.green }
-                ]}
-              >
-                {round.completed}/{round.points} จุด
-              </Text>
-              <Text style={styles.status}>{statusText[round.status]}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color={COLORS.muted} />
-          </Pressable>
-        );
-      })}
+          return (
+            <Pressable
+              key={round.id}
+              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+              onPress={() => handleRoundPress(round.id, isComplete)}
+            >
+              <View style={styles.main}>
+                <Text style={styles.title}>{round.title}</Text>
+                <Text style={styles.time}>{round.time}</Text>
+              </View>
+              <View style={styles.right}>
+                <Text
+                  style={[
+                    styles.count,
+                    round.status === "late" && { color: COLORS.orange },
+                    isComplete && { color: COLORS.green }
+                  ]}
+                >
+                  {round.completed}/{round.points} จุด
+                </Text>
+                <Text style={styles.status}>{statusText[round.status]}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color={COLORS.muted} />
+            </Pressable>
+          );
+        })
+      )}
 
       <StatusCard
         tone="blue"
@@ -83,6 +101,61 @@ export default function RoundsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
+  emptyCard: {
+    marginHorizontal: 14,
+    marginVertical: 10,
+    padding: 24,
+    backgroundColor: "white",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#1B2A3F",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2
+  },
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1E293B",
+    marginBottom: 6
+  },
+  emptySub: {
+    fontSize: 14,
+    color: "#64748B",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 16
+  },
+  emptyInfoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0F9FF",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#BAE6FD"
+  },
+  emptyInfoText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#0369A1",
+    lineHeight: 16
+  },
   heading: { padding: 18, paddingBottom: 10 },
   headingTitle: { fontSize: 20, fontWeight: "900", color: COLORS.text },
   headingSub: { color: COLORS.muted, marginTop: 4 },

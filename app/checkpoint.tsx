@@ -38,7 +38,7 @@ export default function CheckpointScreen() {
   const settings = cpStore.getSettings();
 
   const round = patrolStore.getRound(roundId) || patrolStore.getRounds()[0];
-  const checkpoints = round.checkpoints;
+  const checkpoints = round?.checkpoints || [];
 
   // Active checkpoint index (0-indexed)
   const initialPointParam = parseInt(searchParams.point || "0", 10);
@@ -62,9 +62,9 @@ export default function CheckpointScreen() {
 
   // Photos State (up to 50 photos)
   const [photos, setPhotos] = useState<string[]>(
-    currentPoint.photos && currentPoint.photos.length > 0
+    currentPoint?.photos && currentPoint.photos.length > 0
       ? currentPoint.photos
-      : currentPoint.photoUri
+      : currentPoint?.photoUri
       ? [currentPoint.photoUri]
       : []
   );
@@ -268,6 +268,30 @@ export default function CheckpointScreen() {
 
   const summary = patrolStore.getRoundSummary(roundId);
   const currentDisplayedPhoto = photos[activePhotoIndex] || photos[0];
+
+  if (!round || checkpoints.length === 0 || !currentPoint) {
+    return (
+      <View style={styles.screen}>
+        <TopBar title={`ตรวจจุด : รอบที่ ${roundId}`} back />
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="location-outline" size={48} color="#0C4A94" />
+          </View>
+          <Text style={styles.emptyTitle}>ยังไม่มีจุดตรวจในรอบนี้</Text>
+          <Text style={styles.emptySub}>
+            ผู้ดูแลระบบ (Admin) ยังไม่ได้กำหนดจุดตรวจสำหรับรอบเวลานี้ในระบบ
+          </Text>
+          <Pressable
+            style={({ pressed }) => [styles.emptyBackBtn, pressed && { opacity: 0.85 }]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={18} color="white" />
+            <Text style={styles.emptyBackBtnText}>กลับหน้ารายการ</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -1686,5 +1710,48 @@ const styles = StyleSheet.create({
   fabPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.96 }]
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1E293B",
+    marginBottom: 8,
+    textAlign: "center"
+  },
+  emptySub: {
+    fontSize: 14,
+    color: "#64748B",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24
+  },
+  emptyBackBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#0C4A94",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 14
+  },
+  emptyBackBtnText: {
+    color: "white",
+    fontSize: 15,
+    fontWeight: "700"
   }
 });
