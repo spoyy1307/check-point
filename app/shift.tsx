@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -121,7 +122,7 @@ export default function ShiftScreen() {
               lng: gpsRes?.longitude || targetLng
             };
 
-            cpStore.checkOut(nowTime, nowDate, gpsCoords, "12 ชั่วโมง 00 นาที");
+            cpStore.checkOut(nowTime, nowDate, gpsCoords);
             setShowSummaryModal(true);
           }
         }
@@ -130,10 +131,10 @@ export default function ShiftScreen() {
   };
 
   // Handle Logout
-  const handleLogout = () => {
+  const handleEndShiftAndLogout = () => {
     Alert.alert(
-      "ออกจากระบบ",
-      "คุณต้องการออกจากระบบการปฏิบัติงานใช่หรือไม่?",
+      "ยืนยันออกจากระบบ",
+      "คุณต้องการปิดการปฏิบัติงานและกลับสู่หน้าเลือกรหัสผ่าน รปภ. หรือไม่?",
       [
         { text: "ยกเลิก", style: "cancel" },
         {
@@ -164,7 +165,11 @@ export default function ShiftScreen() {
           <View style={styles.profileCard}>
           <View style={styles.profileHeaderRow}>
             <View style={styles.avatarWrap}>
-              <Text style={styles.avatarEmoji}>{profile.avatarEmoji || "👮‍♂️"}</Text>
+              {profile.avatarUri ? (
+                <Image source={{ uri: profile.avatarUri }} style={styles.avatarImg} />
+              ) : (
+                <Text style={styles.avatarEmoji}>{profile.avatarEmoji || "👮‍♂️"}</Text>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.profileName}>{profile.name}</Text>
@@ -627,7 +632,7 @@ export default function ShiftScreen() {
               {/* Red Primary Button: ออกจากระบบ */}
               <Pressable
                 style={({ pressed }) => [styles.btnLogout, pressed && styles.btnPressed]}
-                onPress={handleLogout}
+                onPress={handleEndShiftAndLogout}
               >
                 <Ionicons name="log-out-outline" size={22} color="white" />
                 <Text style={styles.btnLogoutText}>ออกจากระบบ</Text>
@@ -684,7 +689,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#D0E2FF",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    overflow: "hidden"
+  },
+  avatarImg: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 29
   },
   avatarEmoji: {
     fontSize: 30
