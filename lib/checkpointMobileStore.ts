@@ -93,8 +93,12 @@ export const checkpointMobileStore = {
   async fetchRealFactories(): Promise<SmartVisitorFactory[]> {
     try {
       const res = await apiClient.get("/factories/public");
-      if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
-        const mapped: SmartVisitorFactory[] = res.data.map((f: any) => ({
+      const rawList = Array.isArray(res?.data)
+        ? res.data
+        : (Array.isArray(res) ? res : (Array.isArray(res?.data?.data) ? res.data.data : null));
+
+      if (rawList && rawList.length > 0) {
+        const mapped: SmartVisitorFactory[] = rawList.map((f: any) => ({
           id: String(f.id),
           code: f.code || `FAC-${f.id}`,
           name: f.name,
