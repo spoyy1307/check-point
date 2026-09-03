@@ -245,20 +245,6 @@ export default function LoginScreen() {
               {loading ? "กำลังตรวจสอบข้อมูล..." : "เข้าสู่ระบบ (Login)"}
             </Text>
           </Pressable>
-
-          {/* Alternative PIN Login Button */}
-          <Pressable
-            style={({ pressed }) => [styles.pinSelectBtn, pressed && styles.btnPressed]}
-            onPress={() => {
-              cpStore.bindFactory(selectedFactoryId);
-              router.push("/guard-select");
-            }}
-          >
-            <Ionicons name="keypad-outline" size={20} color="#0C4A94" />
-            <Text style={styles.pinSelectBtnText}>
-              เข้าใช้งานด้วยรหัส PIN (เลือกบัญชี รปภ.)
-            </Text>
-          </Pressable>
         </View>
 
         {/* Footer info (Matching Settings Screen Style) */}
