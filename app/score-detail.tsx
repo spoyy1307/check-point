@@ -4,13 +4,30 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../constants/colors";
 import TopBar from "../components/TopBar";
+import { usePatrolStore } from "../lib/patrolStore";
 
 export default function ScoreDetailScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<"summary" | "criteria" | "guidelines">("summary");
+  const patrolStore = usePatrolStore();
+  const stats = patrolStore.getOverallStats();
 
-  const currentScore = 95;
+  const currentScore = stats.score;
   const targetScore = 100;
+  const onTimeCount = stats.onTimeCount;
+  const lateCount = stats.lateCount;
+  const missCount = stats.missCount;
+  const totalPoints = stats.totalPoints;
+  const completedPoints = stats.completedPoints;
+
+  const scoreLevel =
+    currentScore >= 90
+      ? { label: "ระดับดีเยี่ยม", color: "#059669", icon: "checkmark-circle" }
+      : currentScore >= 80
+      ? { label: "ระดับดี", color: "#2563EB", icon: "checkmark-circle" }
+      : currentScore >= 70
+      ? { label: "ผ่านเกณฑ์", color: "#D97706", icon: "alert-circle" }
+      : { label: "ต้องปรับปรุง", color: "#DC2626", icon: "close-circle" };
 
   return (
     <ScrollView
@@ -37,12 +54,16 @@ export default function ScoreDetailScreen() {
           {/* Level Info */}
           <View style={styles.heroLevelInfo}>
             <View style={styles.statusBadge}>
-              <Ionicons name="checkmark-circle" size={16} color="#059669" />
-              <Text style={styles.statusBadgeText}>ระดับดีเยี่ยม</Text>
+              <Ionicons name={scoreLevel.icon as any} size={16} color={scoreLevel.color} />
+              <Text style={[styles.statusBadgeText, { color: scoreLevel.color }]}>
+                {scoreLevel.label}
+              </Text>
             </View>
             <Text style={styles.heroTitle}>คะแนนการปฏิบัติงาน</Text>
             <Text style={styles.heroSub}>
-              ผลการตรวจจุดประจำกะปัจจุบัน อยู่ในเกณฑ์มาตรฐานระดับสูง
+              {currentScore >= 90
+                ? "ผลการตรวจจุดประจำกะปัจจุบัน อยู่ในเกณฑ์มาตรฐานระดับสูง"
+                : "กรุณาตรวจจุดตามกำหนดเวลาเพื่อรักษาคะแนนมาตรฐาน"}
             </Text>
           </View>
         </View>
@@ -51,14 +72,20 @@ export default function ScoreDetailScreen() {
         <View style={styles.progressBarSection}>
           <View style={styles.progressBarTrack}>
             <View
-              style={[styles.progressBarFill, { width: `${(currentScore / targetScore) * 100}%` }]}
+              style={[
+                styles.progressBarFill,
+                {
+                  width: `${Math.min(100, Math.max(5, (currentScore / targetScore) * 100))}%`,
+                  backgroundColor: scoreLevel.color
+                }
+              ]}
             />
           </View>
           <View style={styles.progressLabels}>
             <Text style={styles.progLabel}>70 (ผ่านเกณฑ์)</Text>
             <Text style={styles.progLabel}>80 (ระดับดี)</Text>
-            <Text style={[styles.progLabel, { color: "#059669", fontWeight: "700" }]}>
-              95 (ปัจจุบัน)
+            <Text style={[styles.progLabel, { color: scoreLevel.color, fontWeight: "700" }]}>
+              {currentScore} (ปัจจุบัน)
             </Text>
             <Text style={[styles.progLabel, { color: "#0C4A94", fontWeight: "800" }]}>
               100 (เต็ม)
@@ -124,10 +151,14 @@ export default function ScoreDetailScreen() {
                 <View style={[styles.dotIndicator, { backgroundColor: COLORS.green }]} />
                 <View>
                   <Text style={styles.tableLabel}>ตรวจตรงเวลา</Text>
-                  <Text style={styles.tableSubLabel}>28 จาก 30 จุดตรวจ</Text>
+                  <Text style={styles.tableSubLabel}>
+                    {onTimeCount} จาก {totalPoints} จุดตรวจ
+                  </Text>
                 </View>
               </View>
-              <Text style={[styles.tableVal, { color: COLORS.green }]}>+90 คะแนน</Text>
+              <Text style={[styles.tableVal, { color: COLORS.green }]}>
+                {onTimeCount > 0 ? `+${onTimeCount * 10} คะแนน` : "0 คะแนน"}
+              </Text>
             </View>
 
             <View style={styles.tableRow}>
@@ -135,10 +166,14 @@ export default function ScoreDetailScreen() {
                 <View style={[styles.dotIndicator, { backgroundColor: COLORS.red }]} />
                 <View>
                   <Text style={styles.tableLabel}>ตรวจล่าช้า</Text>
-                  <Text style={styles.tableSubLabel}>2 จุดตรวจ (หัก 2.5 คะแนน/จุด)</Text>
+                  <Text style={styles.tableSubLabel}>
+                    {lateCount} จุดตรวจ (หัก 5 คะแนน/จุด)
+                  </Text>
                 </View>
               </View>
-              <Text style={[styles.tableVal, { color: COLORS.red }]}>-5 คะแนน</Text>
+              <Text style={[styles.tableVal, { color: COLORS.red }]}>
+                {lateCount > 0 ? `-${lateCount * 5} คะแนน` : "0 คะแนน"}
+              </Text>
             </View>
 
             <View style={styles.tableRow}>
@@ -146,26 +181,28 @@ export default function ScoreDetailScreen() {
                 <View style={[styles.dotIndicator, { backgroundColor: COLORS.muted }]} />
                 <View>
                   <Text style={styles.tableLabel}>ขาดการตรวจจุด</Text>
-                  <Text style={styles.tableSubLabel}>0 จุดตรวจ</Text>
+                  <Text style={styles.tableSubLabel}>{missCount} จุดตรวจ</Text>
                 </View>
               </View>
-              <Text style={styles.tableVal}>0 คะแนน</Text>
+              <Text style={styles.tableVal}>
+                {missCount > 0 ? `-${missCount * 10} คะแนน` : "0 คะแนน"}
+              </Text>
             </View>
 
             <View style={styles.tableRow}>
               <View style={styles.tableRowLeft}>
                 <View style={[styles.dotIndicator, { backgroundColor: "#0C4A94" }]} />
                 <View>
-                  <Text style={styles.tableLabel}>คะแนนความประพฤติและการลงเวลา</Text>
-                  <Text style={styles.tableSubLabel}>บันทึกเข้ากะตรงเวลาและส่งรายงาน</Text>
+                  <Text style={styles.tableLabel}>คะแนนเริ่มต้นประจำกะ</Text>
+                  <Text style={styles.tableSubLabel}>คะแนนมาตรฐานเริ่มต้น</Text>
                 </View>
               </View>
-              <Text style={[styles.tableVal, { color: COLORS.green }]}>+10 คะแนน</Text>
+              <Text style={[styles.tableVal, { color: COLORS.green }]}>100 คะแนน</Text>
             </View>
 
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>คะแนนรวมสุทธิ</Text>
-              <Text style={styles.totalVal}>95 / 100 คะแนน</Text>
+              <Text style={styles.totalVal}>{currentScore} / 100 คะแนน</Text>
             </View>
           </View>
 
